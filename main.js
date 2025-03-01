@@ -5,12 +5,13 @@ import {PiecewiseLinear} from "./piecewise_linear.js";
 const svg = d3.select("#functionplot");
 const paramsvg = d3.select("#parameterplot");
 let current_stride_temp;
+const SECONDS_TO_PLOT = 10;
 
 d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
     let values = data.trim().split("\n").map(Number);
     const MAIN_MINUTE = 822;
 
-    values = values.slice(((MAIN_MINUTE) % 60)*60*80, ((MAIN_MINUTE + 1) % 60)*60*80).slice(0, 240);
+    values = values.slice(((MAIN_MINUTE) % 60)*60*80, ((MAIN_MINUTE + 1) % 60)*60*80).slice(0, 80*SECONDS_TO_PLOT);
     let REAL_ACC_DATA = new PiecewiseLinear(Array.from({length: values.length}, (_, i) => i), values);
     current_stride_temp = new PiecewiseLinear(Array.from({length: values.length}, (_, i) => i), values);
 
@@ -55,11 +56,11 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
     REAL_ACC_DATA.plot(svg, x, y, "blue");
 
     const paramX = d3.scaleLinear()
-        .domain([0, 240])
+        .domain([0, 80*SECONDS_TO_PLOT])
         .range([margin.left, width - margin.right]);
 
     const paramY = d3.scaleLinear()
-        .domain([0, 1.2])
+        .domain([0, .5])
         .range([height - margin.bottom, margin.top]);
 
     const paramXAxis = g => g
@@ -121,23 +122,19 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         const xValues = paramX.domain();
         const yValues = paramY.domain();
 
-        const gridSizeX = Math.abs(paramX(xValues[1]) - paramX(xValues[0])) / 24; // Width of each cell
-        console.log(gridSizeX);
-        const gridSizeY = Math.abs(paramY(yValues[1]) - paramY(yValues[0])); // Height of each cell
+        const gridSizeX = Math.abs(paramX(xValues[1]) - paramX(xValues[0])) / 8/SECONDS_TO_PLOT; // Width of each cell
+        const gridSizeY = Math.abs(paramY(yValues[1]) - paramY(yValues[0])) * 2; // Height of each cell
 
 
         function exceeds_bounds(tau, sigma) {
-            return 200 * sigma + tau > 240;
+            return 200 * sigma + tau > 80*SECONDS_TO_PLOT;
         }
 
         console.log("loop started");
-        for (let tau_loop = 0; tau_loop <= 240; tau_loop += 10) {
-            for (let sigma_loop = 0.1; sigma_loop <= 2; sigma_loop += 0.01) {
+        for (let tau_loop = 0; tau_loop <= 80*SECONDS_TO_PLOT; tau_loop += 10) {
+            for (let sigma_loop = 0.1; sigma_loop <= .5; sigma_loop += 0.01) {
                 if (exceeds_bounds(tau_loop, sigma_loop)) {
                     continue;
-                }
-                if (tau_loop > 230) {
-                    console.log(200 * sigma_loop + tau_loop);
                 }
                 let current_stride_temp_loop = stride_temp_pwl.scale(sigma_loop).shift(tau_loop);
                 let innerprod_loop = PiecewiseLinear.inner_prod(REAL_ACC_DATA, current_stride_temp_loop);
@@ -148,12 +145,22 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                     .attr("y", paramY(sigma_loop))
                     .attr("width", 1*gridSizeX)
                     .attr("height", .01*gridSizeY)
-                    .style("fill", d3.interpolateBlues(innerprod_loop / 20))
+                    .style("fill", d3.interpolateBlues(innerprod_loop / 10))
                     .on("click", function() {
                         svg.selectAll(".altered-template").remove();
                         current_stride_temp_loop.plot(svg, x, y, "red", "altered-template");
                         d3.select("#tau").property("value", tau_loop);
                         d3.select("#sigma").property("value", sigma_loop);
+                        paramsvg.selectAll(".tau-sigma-circle-outlined").remove();
+
+                        paramsvg.append("circle")
+                            .attr("class", "tau-sigma-circle-outlined")
+                            .attr("cx", paramX(tau_loop))
+                            .attr("cy", paramY(sigma_loop))
+                            .attr("r", circle_rad)
+                            .style("fill", d3.interpolateBlues(innerprod_loop / 20))
+                            .attr("stroke", "black")
+                            .attr("stroke-width", 1);
                     });
         
             }

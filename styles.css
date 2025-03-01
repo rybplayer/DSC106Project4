@@ -8,4 +8,5 @@ svg#parameterplot {
     width: 50%;
     height: 50%;
     overflow: visible;
+    padding: 1em;
 }
