@@ -4,6 +4,7 @@ import {PiecewiseLinear} from "./piecewise_linear.js";
 
 const svg = d3.select("#functionplot");
 const paramsvg = d3.select("#parameterplot");
+let current_stride_temp;
 
 d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
     let values = data.trim().split("\n").map(Number);
@@ -11,7 +12,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
     values = values.slice(((MAIN_MINUTE) % 60)*60*80, ((MAIN_MINUTE + 1) % 60)*60*80).slice(0, 240);
     let REAL_ACC_DATA = new PiecewiseLinear(Array.from({length: values.length}, (_, i) => i), values);
-    let current_stride_temp = new PiecewiseLinear(Array.from({length: values.length}, (_, i) => i), values);
+    current_stride_temp = new PiecewiseLinear(Array.from({length: values.length}, (_, i) => i), values);
 
     const width = 800;
     const height = 400;
@@ -151,6 +152,8 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                     .on("click", function() {
                         svg.selectAll(".altered-template").remove();
                         current_stride_temp_loop.plot(svg, x, y, "red", "altered-template");
+                        d3.select("#tau").property("value", tau_loop);
+                        d3.select("#sigma").property("value", sigma_loop);
                     });
         
             }
@@ -161,7 +164,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             let tau = +this.value;
 
             let sigma = +d3.select("#sigma").property("value");
-            let current_stride_temp = stride_temp_pwl.scale(sigma);
+            current_stride_temp = stride_temp_pwl.scale(sigma);
             let shiftedTemplate = current_stride_temp.shift(tau);
 
             
