@@ -1,0 +1,100 @@
+If I gave you a video of someone walking and told you to count their steps, could you?
+
+Hopefully the answer is yes, it's not that hard. As long as I give you a concrete definition of a "step" you could just use your eyes to count.
+
+But how does your phone know how many steps you've taken? When you check the health app, how exactly is that number of steps determined?
+
+As it turns out, there's a lot of different ways to count steps. This demo will explain one step counting algorithm called ADEPT. 
+
+It isn't necessarily the one that your phone uses, but it's very explainable.
+
+When we count someone's steps, we use our eyeballs to see what they do and count it that way.
+
+But for a simple step counting algorithm, video data would be overkill.
+
+Instead, the data used is accelerometer data. This means data on acceleration in the x, y, and z directions at a high frequency.
+
+The data used in the study has accelerometer at 80hz, meaning 80 times per second.
+
+But three numbers is a lot to keep track of, especially when the device taking the measurements could be at any orientation.
+
+So instead of using all three directions of acceleration, we use the overall magnitude of acceleration.
+
+This is calculated using the usual vector magnitude formula, sqrt(x^2 + y^2 + z^2).
+
+So using this acceleration magnitude data, how do we count the number of steps?
+
+Well when you walk, you propel yourself forward, so clearly you generate some sort of acceleration.
+
+That means that a step should show up in the acceleration data in some way.
+
+The problem is, we don't know what exactly a step's acceleration looks like. 
+
+The way that the research paper that introduced ADEPT gets around this issue is quite interesting.
+
+First, then record a video and accelerometer data at the same time.
+
+Then they have an expert count the number of steps and mark the data where one step starts and another ends.
+
+Then they look at the data and try to find the "shape" or "pattern" of a step. 
+
+In fact, the EP in ADEPT stands for "Empirical Pattern." The full acronym is "Adaptive Empirical Pattern Transformation."
+
+Here's the pattern that the researchers found empirically:
+
+So now that we have this pattern template, we just match this to our accelerometer data, right?
+
+Well, yes!
+
+But what exactly does it mean to "match" the pattern to our data?
+
+There's a lot of ways you could go about measuring a thing like that, but you want some sort of formula that measures similarity.
+
+If we think about our data and our step template as functions, we can measure their similarity using an "inner product."
+
+If you don't know what an inner product is, think of the dot product. This is the "inner product" between two vectors.
+
+If the dot product between two vectors is zero, then the two vectors are "orthogonal" and hence not related at all.
+
+If the dot product between two vectors is highly positive then the two vectors are very related.
+
+In fact the highest the dot product can be is if the two vectors go in the same exact direction.
+
+This is how inner products work in general, a high positive value means highly similar, zero means completely dissimilar, and highly negative means highly inversely correlated.
+
+So all we need to do is find an inner product for two functions. Once we have that, we can measure their similarity.
+
+How do you go about finding an inner product? Well luckily for us, we don't have to invent our own.
+
+It turns out mathematicians care a lot about inner products, and there's one that we can use very easily.
+
+It is called the "L2 inner product" and its definition is very easy to understand.
+
+To find the L2 inner product between two functions f(x) and g(x), you simply multiply them and take the integral of the result.
+
+If two functions are highly positive in the same region, then multiplying in this region will give you a very big result.
+
+Similarly, if two functions are highly negative in the same region, multiplying will give you a big result.
+
+However, if one function is highly positive in the same place where the other function is highly negative, the result will be very negative.
+
+So we're almost done! We have our empirical step template and we have a way of comparing it to our data to see how similar it is.
+
+There's just one more small wrinkle.
+
+The whole point is we don't know when the steps occur in our data. 
+
+And our step template is only as long as one step, our real data is much longer and there could be many steps.
+
+So how do we compare the two?
+
+What we can do is just look at every possible place that our step could start, shift our step template to that timestamp, and then compare.
+
+We can do a similar thing with the width of our step. It could be that some people walk faster or slower.
+
+We can squeeze or stretch our template to see if a certain length of time for a step has higher similarity.
+
+By looping over all possible timestamp locations and widths, we can find all the places in our data where it looks like a step.
+
+Then we can simply count the peaks and see how many steps there are.
+
