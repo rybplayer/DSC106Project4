@@ -4,13 +4,171 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
-    <script type="module" src="main.js"></script>
-    <title>Document</title>
+    <title>Step Counter Visualization</title>
+    <!-- Preload the sprite sheet -->
+    <link rel="preload" href="8 Direction Walk Sheets (10 Colors)/Blue/blue_walk_EAST-Sheet.png" as="image">
 </head>
 <body>
-    <input id="tau" type="range" min = "0" max = "800" value = "0">Tau
-    <input id="sigma" type="range" min = "0.1" max = ".5" step = "0.01" value = ".25">Sigma
-    <svg id="parameterplot"></svg>
-    <svg id="functionplot"></svg>
+    <!-- Theme Selector -->
+    <div class="theme-selector">
+        <select id="theme-select">
+            <option value="auto">Auto</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+        </select>
+    </div>
+
+    <!-- Section 1: Introduction -->
+    <section id="intro" class="section">
+        <h1>How do you count your steps?</h1>
+    </section>
+
+    <!-- Section 2: Visual Recognition -->
+    <section id="visual-recognition" class="section">
+        <h1>If you saw a person walking, <br> you could probably count their steps.</h1>
+        <div id="walking-man-container" class="sprite-container"></div>
+    </section>
+
+    <!-- Section 3: Computer Approach -->
+    <section id="computer-approach" class="section">
+        <h1>How would you make a computer count steps?</h1>
+        <p>One idea is measuring movement and finding its magnitude.</p>
+        <div class="plot-container">
+            <svg id="basic-functionplot"></svg>
+        </div>
+    </section>
+
+    <!-- Section 4: CWT Transform -->
+    <section id="cwt-transform" class="section">
+        <h1>The CWT transform is one idea.</h1>
+        <p>Basically, fit a normalized "step acceleration magnitude" curve to the data, and count steps.</p>
+        
+        <div class="controls">
+            <label>
+                Tau
+                <input id="tau" type="range" min="0" max="800" value="0">
+            </label>
+            <label>
+                Sigma
+                <input id="sigma" type="range" min="0.1" max=".5" step="0.01" value=".5">
+            </label>
+        </div>
+        
+        <div class="plots-wrapper">
+            <div class="plot-container">
+                <svg id="parameterplot"></svg>
+            </div>
+            
+            <div class="plot-container">
+                <svg id="functionplot"></svg>
+            </div>
+        </div>
+        
+        <div class="explanation">
+            <h2>How Step Counting Works</h2>
+            <p>When we count someone's steps visually, we use our eyes to observe their movement. But for a computer, we need a different approach.</p>
+            
+            <p>Step counting algorithms like ADEPT (Adaptive Empirical Pattern Transformation) use accelerometer data - measurements of acceleration in the x, y, and z directions at high frequency (typically 80Hz or 80 times per second).</p>
+            
+            <p>Instead of using all three directions of acceleration, we use the overall magnitude calculated as sqrt(x² + y² + z²). This simplifies the data and makes it orientation-independent.</p>
+            
+            <p>The key insight is that when you walk, each step creates a distinctive pattern in the acceleration data. Researchers identify this pattern by recording both video and accelerometer data simultaneously, having experts mark where steps begin and end, and extracting the typical "shape" of a step's acceleration profile.</p>
+            
+            <p>To count steps, we compare this empirical template pattern with our acceleration data using an inner product (similar to a dot product for vectors). A high positive value indicates high similarity, suggesting a step has occurred.</p>
+            
+            <p>Since we don't know when steps occur or how long they take, we shift the template to different positions (tau) and stretch/compress it (sigma) to find the best matches. The peaks in similarity correspond to steps.</p>
+            
+            <p>The interactive visualization above lets you explore how changing these parameters affects the matching process.</p>
+        </div>
+    </section>
+
+    <script type="module" src="main.js"></script>
+    <script type="module">
+        import WalkingMan from './man.js';
+        
+        // Initialize the walking man animation
+        const walkingMan = new WalkingMan('walking-man-container', {
+            fps: 8,
+            showControls: true,
+            // Let the class calculate the frame width automatically
+            // based on the sprite sheet dimensions
+        });
+        
+        walkingMan.play();
+        
+        // Theme selector functionality
+        const themeSelect = document.getElementById('theme-select');
+        
+        // Check for system preference
+        const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        
+        // Set initial theme based on system preference if auto is selected
+        function setInitialTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            
+            if (savedTheme) {
+                themeSelect.value = savedTheme;
+                if (savedTheme === 'dark') {
+                    document.body.setAttribute('data-theme', 'dark');
+                } else if (savedTheme === 'light') {
+                    document.body.setAttribute('data-theme', 'light');
+                } else if (savedTheme === 'auto') {
+                    if (prefersDarkScheme.matches) {
+                        document.body.setAttribute('data-theme', 'dark');
+                    } else {
+                        document.body.setAttribute('data-theme', 'light');
+                    }
+                }
+            } else {
+                // Default to auto
+                themeSelect.value = 'auto';
+                if (prefersDarkScheme.matches) {
+                    document.body.setAttribute('data-theme', 'dark');
+                }
+            }
+        }
+        
+        // Handle theme changes
+        themeSelect.addEventListener('change', function() {
+            const theme = this.value;
+            localStorage.setItem('theme', theme);
+            
+            if (theme === 'dark') {
+                document.body.setAttribute('data-theme', 'dark');
+            } else if (theme === 'light') {
+                document.body.setAttribute('data-theme', 'light');
+            } else if (theme === 'auto') {
+                if (prefersDarkScheme.matches) {
+                    document.body.setAttribute('data-theme', 'dark');
+                } else {
+                    document.body.setAttribute('data-theme', 'light');
+                }
+            }
+        });
+        
+        // Listen for system theme changes if auto is selected
+        prefersDarkScheme.addEventListener('change', function(e) {
+            if (themeSelect.value === 'auto') {
+                if (e.matches) {
+                    document.body.setAttribute('data-theme', 'dark');
+                } else {
+                    document.body.setAttribute('data-theme', 'light');
+                }
+            }
+        });
+        
+        // Initialize theme
+        setInitialTheme();
+        
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
 </body>
 </html>

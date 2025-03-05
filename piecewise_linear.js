@@ -55,7 +55,7 @@ export class PiecewiseLinear {
         return (y2 - y1) / (x2 - x1)*(x0 - x1) + y1;
     }
 
-    plot(svg, xScale, yScale, color = "red", cls = "") {
+    plot(svg, xScale, yScale, color = "var(--plot-line-color-2)", cls = "") {
         const dataPoints = this.x.map((xVal, i) => ({
             x: xVal,
             y: this.y[i]
