@@ -53,7 +53,7 @@ function createBasicAccelerationPlot(data) {
         .range([margin.left, width - margin.right]);
     
     const y = d3.scaleLinear()
-        .domain([0, 2])
+        .domain([.6, 2])
         .nice()
         .range([height - margin.bottom, margin.top]);
     
@@ -120,7 +120,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         .range([margin.left, width - margin.right]);
 
     const y = d3.scaleLinear()
-        .domain([0, 2])
+        .domain([.6, 2])
         .nice()
         .range([height - margin.bottom, margin.top]);
 
@@ -157,11 +157,16 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
     REAL_ACC_DATA.plot(svg, x, y, "var(--plot-line-color-1)");
 
     const paramX = d3.scaleLinear()
+        .domain([0, 10])
+        .range([margin.left, width - margin.right]);
+
+    const paramX_seconds = d3.scaleLinear()
         .domain([0, 80*SECONDS_TO_PLOT])
         .range([margin.left, width - margin.right]);
 
+
     const paramY = d3.scaleLinear()
-        .domain([0, .5])
+        .domain([-20, 20])
         .range([height - margin.bottom, margin.top]);
 
     const paramXAxis = g => g
@@ -176,28 +181,41 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
     paramsvg.append("text")
         .attr("x", (width / 2))             
-        .attr("y", margin.top / 2 + 50)
+        .attr("y", margin.top / 2)
         .attr("text-anchor", "middle")  
         .style("font-size", "24px") 
         .style("fill", "var(--text-color)")
-        .text("Similarity Heatmap");
+        .style("font-family", "sans-serif")
+        .text("Similarity Between Step Template");
 
     paramsvg.append("text")
-        .attr("transform", `translate(${width / 2},${height - margin.bottom / 3 + 20})`)
-        .style("text-anchor", "middle")
+        .attr("x", (width / 2))             
+        .attr("y", margin.top / 2 + 30)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "24px") 
         .style("fill", "var(--text-color)")
-        .text("Tau (Shift Parameter)")
-        .style("font-size", "16px");
+        .style("font-family", "sans-serif")
+        .text("and Real Accelerometer Data at Each Time");
 
     paramsvg.append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", margin.left / 2)
-        .attr("x", -height / 2)
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
+        .attr("transform", `translate(0,${height - margin.bottom})`)
+        .style("text-anchor", "end")
         .style("fill", "var(--text-color)")
-        .attr("font-size", "16px")
-        .text("Sigma (Scale Parameter)");
+        .attr("x", width - margin.right)
+        .attr("y", -10)
+        .attr("fill", "var(--text-color)")
+        .style("font-size", "12px")
+        .style("font-family", "sans-serif")
+        .text("Time (Seconds)");
+
+    paramsvg.append("text")
+        .attr("transform", `translate(${margin.left},0)`)
+        .attr("x", 10)
+        .attr("y", margin.top)
+        .attr("fill", "var(--text-color)")
+        .attr("text-anchor", "start")
+        .style("font-size", "12px")
+        .text("Similarity");
 
     paramsvg.attr("viewBox", [0, 0, width, height]);
 
@@ -211,13 +229,14 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
     d3.text("stride_template.txt").then(function(templateData) {
         let strideTemplate = templateData.trim().split("\n").map(Number);
+        let strideTemplateReshaped = strideTemplate.map(d => d / 4 + 1.3);
 
         let stride_temp_pwl = new PiecewiseLinear(Array.from({length: strideTemplate.length}, (_, i) => i), strideTemplate);
-        
+    
         // Get initial slider values
         let initialTau = +d3.select("#tau").property("value");
         let initialSigma = +d3.select("#sigma").property("value");
-        
+
         // Initialize with proper scaling based on slider values
         current_stride_temp = stride_temp_pwl.scale(initialSigma);
         let initialShiftedTemplate = current_stride_temp.shift(initialTau);
@@ -256,44 +275,63 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             return 200 * sigma + tau > 80*SECONDS_TO_PLOT;
         }
 
-        console.log("loop started");
-        for (let tau_loop = 0; tau_loop <= 80*SECONDS_TO_PLOT; tau_loop += 10) {
-            for (let sigma_loop = 0.1; sigma_loop <= .5; sigma_loop += 0.01) {
-                if (exceeds_bounds(tau_loop, sigma_loop)) {
-                    continue;
-                }
-                let current_stride_temp_loop = stride_temp_pwl.scale(sigma_loop).shift(tau_loop);
-                let innerprod_loop = PiecewiseLinear.inner_prod(REAL_ACC_DATA, current_stride_temp_loop);
+        // console.log("loop started");
+        // for (let tau_loop = 0; tau_loop <= 80*SECONDS_TO_PLOT; tau_loop += 10) {
+        //     for (let sigma_loop = 0.1; sigma_loop <= .5; sigma_loop += 0.01) {
+        //         if (exceeds_bounds(tau_loop, sigma_loop)) {
+        //             continue;
+        //         }
+        //         let current_stride_temp_loop = stride_temp_pwl.scale(sigma_loop).shift(tau_loop);
+        //         let innerprod_loop = PiecewiseLinear.inner_prod(REAL_ACC_DATA, current_stride_temp_loop);
                 
 
-                paramsvg.append("rect")
-                    .attr("x", paramX(tau_loop))
-                    .attr("y", paramY(sigma_loop))
+        //         paramsvg.append("rect")
+        //             .attr("x", paramX(tau_loop))
+        //             .attr("y", paramY(sigma_loop))
                     
-                    .attr("width", 1*gridSizeX)
+        //             .attr("width", 1*gridSizeX)
                     
-                    .attr("height", .01*gridSizeY)
-                    .style("fill", d3.interpolateBlues(innerprod_loop / 10))
-                    .on("click", function() {
-                        svg.selectAll(".altered-template").remove();
-                        current_stride_temp_loop.plot(svg, x, y, "red", "altered-template");
-                        d3.select("#tau").property("value", tau_loop);
-                        d3.select("#sigma").property("value", sigma_loop);
-                        paramsvg.selectAll(".tau-sigma-circle-outlined").remove();
+        //             .attr("height", .01*gridSizeY)
+        //             .style("fill", d3.interpolateBlues(innerprod_loop / 10))
+        //             .on("click", function() {
+        //                 svg.selectAll(".altered-template").remove();
+        //                 current_stride_temp_loop.plot(svg, x, y, "red", "altered-template");
+        //                 d3.select("#tau").property("value", tau_loop);
+        //                 d3.select("#sigma").property("value", sigma_loop);
+        //                 paramsvg.selectAll(".tau-sigma-circle-outlined").remove();
 
-                        paramsvg.append("circle")
-                            .attr("class", "tau-sigma-circle-outlined")
-                            .attr("cx", paramX(tau_loop))
-                            .attr("cy", paramY(sigma_loop))
-                            .attr("r", circle_rad)
-                            .style("fill", d3.interpolateBlues(innerprod_loop / 20))
-                            .attr("stroke", "black")
-                            .attr("stroke-width", 1);
-                    });
+        //                 paramsvg.append("circle")
+        //                     .attr("class", "tau-sigma-circle-outlined")
+        //                     .attr("cx", paramX(tau_loop))
+        //                     .attr("cy", paramY(sigma_loop))
+        //                     .attr("r", circle_rad)
+        //                     .style("fill", d3.interpolateBlues(innerprod_loop / 20))
+        //                     .attr("stroke", "black")
+        //                     .attr("stroke-width", 1);
+        //             });
         
-            }
+        //     }
+        // }
+        // console.log("loop ended");
+
+        let sim_scores = []
+        let static_sigma = .4;
+        for (let tau_loop = 0; tau_loop <= 80*SECONDS_TO_PLOT; tau_loop += 1) {
+            let current_stride_temp_loop = stride_temp_pwl.scale(static_sigma).shift(tau_loop);
+            let innerprod_loop = PiecewiseLinear.inner_prod(REAL_ACC_DATA, current_stride_temp_loop);
+            sim_scores.push(innerprod_loop);
         }
-        console.log("loop ended");
+
+        const simLine = d3.line()
+            .x((d, i) => paramX_seconds(i))
+            .y(d => paramY(d));
+
+        paramsvg.append("path")
+            .datum(sim_scores)
+            .attr("fill", "none")
+            .attr("stroke", "var(--plot-line-color-1)")
+            .attr("stroke-width", 2)
+            .attr("d", simLine);
 
         d3.select("#tau").on("input", function() {
             let tau = +this.value;

@@ -56,10 +56,20 @@ export class PiecewiseLinear {
     }
 
     plot(svg, xScale, yScale, color = "var(--plot-line-color-2)", cls = "") {
-        const dataPoints = this.x.map((xVal, i) => ({
-            x: xVal,
-            y: this.y[i]
-        }));
+        let dataPoints;
+        if (cls == "altered-template") {
+            dataPoints = this.x.map((xVal, i) => ({
+                x: xVal,
+                y: this.y[i] / 5 + 1.3
+            }));
+        } else {
+            dataPoints = this.x.map((xVal, i) => ({
+                x: xVal,
+                y: this.y[i]
+            }));
+        }
+
+
           
           // Line generator
         const lineGen = d3.line()
