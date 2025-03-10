@@ -59,15 +59,15 @@ export class PiecewiseLinear {
         const dataPoints = this.x.map((xVal, i) => ({
             x: xVal,
             y: this.y[i]
-          }));
+        }));
           
           // Line generator
-          const lineGen = d3.line()
+        const lineGen = d3.line()
             .x(d => xScale(d.x))  // Map x using the same xScale
             .y(d => yScale(d.y)); // Map y using the same yScale
           
           // Append function plot
-          svg.append("path")
+        svg.append("path")
             .datum(dataPoints)
             .attr("d", lineGen)
             .attr("fill", "none")

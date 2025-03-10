@@ -47,9 +47,13 @@ function createBasicAccelerationPlot(data) {
     const x = d3.scaleLinear()
         .domain([0, data.length - 1])
         .range([margin.left, width - margin.right]);
+
+    const x_seconds = d3.scaleLinear()
+        .domain([0, (data.length) / 80])
+        .range([margin.left, width - margin.right]);
     
     const y = d3.scaleLinear()
-        .domain([-2, 2])
+        .domain([0, 2])
         .nice()
         .range([height - margin.bottom, margin.top]);
     
@@ -59,13 +63,13 @@ function createBasicAccelerationPlot(data) {
     basicFunctionPlot.append("g")
         .attr("class", "axis")
         .attr("transform", `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0))
+        .call(d3.axisBottom(x_seconds).ticks(width / 80).tickSizeOuter(0))
         .append("text")
         .attr("x", width - margin.right)
         .attr("y", -10)
         .attr("fill", "var(--text-color)")
         .attr("text-anchor", "end")
-        .text("Time");
+        .text("Time (Seconds)");
     
     // Add Y axis
     basicFunctionPlot.append("g")
@@ -77,17 +81,8 @@ function createBasicAccelerationPlot(data) {
         .attr("y", margin.top)
         .attr("fill", "var(--text-color)")
         .attr("text-anchor", "start")
-        .text("Acceleration Magnitude");
+        .text("Acceleration Magnitude (g)");
     
-    // Add zero line
-    basicFunctionPlot.append("line")
-        .attr("x1", margin.left)
-        .attr("x2", width - margin.right)
-        .attr("y1", y(0))
-        .attr("y2", y(0))
-        .attr("stroke", "var(--plot-grid-color)")
-        .attr("stroke-width", 1)
-        .attr("stroke-dasharray", "4,4");
     
     // Plot the data
     const line = d3.line()
@@ -120,20 +115,36 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         .domain([0, values.length - 1])
         .range([margin.left, width - margin.right]);
 
+    const x_seconds = d3.scaleLinear()
+        .domain([0, values.length/80])
+        .range([margin.left, width - margin.right]);
+
     const y = d3.scaleLinear()
-        .domain([-2, 2])
+        .domain([0, 2])
         .nice()
         .range([height - margin.bottom, margin.top]);
 
     const xAxis = g => g
         .attr("class", "axis")
         .attr("transform", `translate(0,${height - margin.bottom})`)
-        .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
+        .call(d3.axisBottom(x_seconds).ticks(width / 80).tickSizeOuter(0))
+        .append("text")
+        .attr("x", width - margin.right)
+        .attr("y", -10)
+        .attr("fill", "var(--text-color)")
+        .attr("text-anchor", "end")
+        .text("Time (Seconds)");
 
     const yAxis = g => g
         .attr("class", "axis")
         .attr("transform", `translate(${margin.left},0)`)
-        .call(d3.axisLeft(y));
+        .call(d3.axisLeft(y))
+        .append("text")
+        .attr("x", 10)
+        .attr("y", margin.top)
+        .attr("fill", "var(--text-color)")
+        .attr("text-anchor", "start")
+        .text("Acceleration Magnitude (g)");
 
     svg.attr("viewBox", [0, 0, width, height]);
 
@@ -142,15 +153,6 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
     svg.append("g")
         .call(yAxis);
-
-    svg.append("line")
-        .attr("x1", margin.left)
-        .attr("x2", width - margin.right)
-        .attr("y1", y(0))
-        .attr("y2", y(0))
-        .attr("stroke", "var(--plot-grid-color)")
-        .attr("stroke-width", 1)
-        .attr("stroke-dasharray", "4,4");
 
     REAL_ACC_DATA.plot(svg, x, y, "var(--plot-line-color-1)");
 
