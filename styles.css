@@ -223,3 +223,19 @@ svg#parameterplot {
     background-color: var(--highlight-color);
     opacity: 0.9;
 }
+
+#sigma {
+    visibility: hidden;
+}
+
+#sigma-label {
+    visibility: hidden;
+}
+
+#tau {
+    visibility: hidden;
+}
+
+#tau-label {
+    visibility: hidden;
+}
