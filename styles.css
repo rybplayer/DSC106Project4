@@ -239,3 +239,18 @@ svg#parameterplot {
 #tau-label {
     visibility: hidden;
 }
+
+.inner-prod-result {
+    font-size: 48px;
+}
+
+#similarity-calculation .plots-wrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+}

@@ -38,8 +38,34 @@
             <svg id="basic-functionplot"></svg>
         </div>
     </section>
+    <!-- Section 4: Similarity Calculation -->
+     <section id="similarity-calculation" class="section">
+        <h1>How is similarity calculated?</h1>
+        <h2>We simply take the two functions, multiply them, and integrate the result!</h2>
+        <h2><span style="color: green">Green</span> = <span style="color: var(--plot-line-color-2)">Red</span> &sdot; <span style="color: var(--plot-line-color-1)">Blue</span></h2>
+        <h2>Similarity = <span style="font-size: 48pt">&int;</span> <span style="color: green">Green</span></h2>
+        <h3>Example #1: A close match!</h3>
+        <div class="plots-wrapper">
+            <div class="plot-container">
+                <svg id="sim-calc-top-left"></svg>
+            </div>
+            <div class="plot-container">
+                <svg id="sim-calc-top-right"></svg>
+            </div>
+        </div>
+        <h3>Example #2: Not a close match at all!</h3>
+        <div class="plots-wrapper">
+            <div class="plot-container">
+                <svg id="sim-calc-bottom-left"></svg>
+            </div>
+            <div class="plot-container">
+                <svg id="sim-calc-bottom-right"></svg>
+            </div>
+        </div>
+        <h3>Our data is piecewise linear just like these functions, we just have way more points.</h3>
+     </section>
 
-    <!-- Section 4: CWT Transform -->
+    <!-- Section 5: CWT Transform -->
     <section id="cwt-transform" class="section">
         <h1>The CWT transform is one idea.</h1>
         <p>Basically, fit a normalized "step acceleration magnitude" curve to the data, and count steps.</p>

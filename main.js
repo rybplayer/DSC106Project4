@@ -6,6 +6,11 @@ import {PiecewiseLinear} from "./piecewise_linear.js";
 const svg = d3.select("#functionplot");
 const paramsvg = d3.select("#parameterplot");
 const basicFunctionPlot = d3.select("#basic-functionplot");
+const sim_calc_top_left_svg = d3.select("#sim-calc-top-left");
+const sim_calc_top_right_svg  = d3.select("#sim-calc-top-right");
+const sim_calc_bottom_left_svg = d3.select("#sim-calc-bottom-left");
+const sim_calc_bottom_right_svg  = d3.select("#sim-calc-bottom-right");
+
 let current_stride_temp = null;
 const SECONDS_TO_PLOT = 10;
 
@@ -278,7 +283,6 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             } else {
             paramsvg.selectAll(".hover-circle").remove();
             }
-
         });
 
         const xValues = paramX.domain();
@@ -371,6 +375,297 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 .attr("stroke-width", 1);
         });
 
+        let example_template = [-.5, .5, -.5, .5];
+        let example_match = [-1, 1, 0, 2];
+        let example_nonmatch = [1, -1, 1, 0];
+
+        const exampleX = d3.scaleLinear()
+            .domain([0, example_template.length - 1])
+            .range([margin.left, width - margin.right]);
+
+        const exampleY = d3.scaleLinear()
+            .domain([-1, 1])
+            .range([height - margin.bottom, margin.top]);
+
+        const exampleXAxis = g => g
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(exampleX).ticks(example_template.length).tickSizeOuter(0));
+
+        const exampleYAxis = g => g
+            .attr("class", "axis")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(exampleY));
+
+        sim_calc_top_left_svg.attr("viewBox", [0, 0, width, height]);
+
+        sim_calc_top_left_svg.append("g")
+            .call(exampleXAxis);
+
+        sim_calc_top_left_svg.append("g")
+            .call(exampleYAxis);
+
+        const exampleLine = d3.line()
+            .x((d, i) => exampleX(i))
+            .y(d => exampleY(d));
+
+        sim_calc_top_left_svg.append("path")
+            .datum(example_template)
+            .attr("fill", "none")
+            .attr("stroke", "var(--plot-line-color-2)")
+            .attr("stroke-width", 2)
+            .attr("d", exampleLine);
+
+        sim_calc_top_left_svg.append("path")
+            .datum(example_match)
+            .attr("fill", "none")
+            .attr("stroke", "var(--plot-line-color-1)")
+            .attr("stroke-width", 2)
+            .attr("d", exampleLine);
+
+        sim_calc_bottom_left_svg.attr("viewBox", [0, 0, width, height]);
+
+        sim_calc_bottom_left_svg.append("g")
+            .call(exampleXAxis);
+
+        sim_calc_bottom_left_svg.append("g")
+            .call(exampleYAxis);
+
+        sim_calc_bottom_left_svg.append("path")
+            .datum(example_template)
+            .attr("fill", "none")
+            .attr("stroke", "var(--plot-line-color-2)")
+            .attr("stroke-width", 2)
+            .attr("d", exampleLine);
+
+        sim_calc_bottom_left_svg.append("path")
+            .datum(example_nonmatch)
+            .attr("fill", "none")
+            .attr("stroke", "var(--plot-line-color-1)")
+            .attr("stroke-width", 2)
+            .attr("d", exampleLine);
+
+        function shadeAreaWithTooltip(x1, x2, A, a1, b1, a2, b2, svg) {
+            let fill_color;
+            if (A < 0) {
+                fill_color = "pink";
+            } else {
+                fill_color = "lightblue";
+            }
+            const areaData = d3.range(x1, x2 + 0.01, 0.01);
+            const areaFunction = d3.area()
+            .x(d => exampleX(d))
+            .y0(exampleY(0))
+            .y1(d => exampleY((a1 * d + b1) * (a2 * d + b2)));
+
+            const areaPath = svg.append("path")
+            .datum(areaData)
+            .attr("fill", fill_color)
+            .attr("opacity", 0.5)
+            .lower()
+            .attr("d", areaFunction);
+
+            const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("visibility", "hidden")
+            .style("background", "var(--background-color)")
+            .style("border", "1px solid black")
+            .style("padding", "5px")
+            .text(`Similarity Score Contribution: ${A}`);
+
+            areaPath
+            .on("mouseover", function(event) {
+                tooltip.style("visibility", "visible");
+                d3.select(this).attr("opacity", 0.8); // Highlight the area on hover
+            })
+            .on("mousemove", function(event) {
+                tooltip.style("top", (event.pageY - 10) + "px")
+                .style("left", (event.pageX + 10) + "px");
+            })
+            .on("mouseout", function() {
+                tooltip.style("visibility", "hidden");
+                d3.select(this).attr("opacity", 0.5); // Reset the area opacity
+            });
+        }
+
+
+        const quadraticFunction1 = d3.line()
+            .x(d => exampleX(d))
+            .y(d => exampleY((2 * d - 1) * (d - 0.5)));
+
+        const quadraticData1 = d3.range(0, 1.01, 0.01);
+
+        sim_calc_top_right_svg.attr("viewBox", [0, 0, width, height]);
+
+        sim_calc_top_right_svg.append("g")
+            .call(exampleXAxis);
+
+        sim_calc_top_right_svg.append("g")
+            .call(exampleYAxis);
+
+        sim_calc_top_right_svg.append("path")
+            .datum(quadraticData1)
+            .attr("fill", "none")
+            .attr("stroke", "green")
+            .attr("stroke-width", 5)
+            .attr("d", quadraticFunction1);
+
+        const quadraticFunction2 = d3.line()
+            .x(d => exampleX(d))
+            .y(d => exampleY((-d + 2) * (-d + 1.5)));
+
+        const quadraticData2 = d3.range(1, 2.01, 0.01);
+
+        sim_calc_top_right_svg.append("path")
+            .datum(quadraticData2)
+            .attr("fill", "none")
+            .attr("stroke", "green")
+            .attr("stroke-width", 5)
+            .attr("d", quadraticFunction2);
+
+        const quadraticFunction3 = d3.line()
+            .x(d => exampleX(d))
+            .y(d => exampleY((2 * d - 4) * (d - 2.5)));
+
+        const quadraticData3 = d3.range(2, 3.01, 0.01);
+
+        sim_calc_top_right_svg.append("path")
+            .datum(quadraticData3)
+            .attr("fill", "none")
+            .attr("stroke", "green")
+            .attr("stroke-width", 5)
+            .attr("d", quadraticFunction3);
+
+        // Add a dotted line at y = 0
+        sim_calc_top_right_svg.append("line")
+            .attr("x1", margin.left)
+            .attr("x2", width - margin.right)
+            .attr("y1", exampleY(0))
+            .attr("y2", exampleY(0))
+            .attr("stroke", "currentColor")
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "4,4");
+
+        sim_calc_top_left_svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", height - margin.bottom / 2 - 50)
+            .attr("text-anchor", "middle")
+            .style("font-size", "24px")
+            .style("fill", "currentColor")
+            .style("font-family", "sans-serif")
+            .text("The peaks and valleys line up, creating a high similarity");
+
+        shadeAreaWithTooltip(0, 1, 0.167, 2, -1, 1, -.5, sim_calc_top_right_svg);
+        shadeAreaWithTooltip(1, 1.5, 0.104, -1, 2, -1, 1.5, sim_calc_top_right_svg);
+        shadeAreaWithTooltip(1.5, 2, -0.021, -1, 2, -1, 1.5, sim_calc_top_right_svg);
+        shadeAreaWithTooltip(2, 2.5, -0.042, 2, -4, 1, -2.5, sim_calc_top_right_svg);
+        shadeAreaWithTooltip(2.5, 3, 0.208, 2, -4, 1, -2.5, sim_calc_top_right_svg);
+
+        sim_calc_top_right_svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", margin.top / 2 + 30)
+            .attr("text-anchor", "middle")
+            .style("font-size", "24px")
+            .style("fill", "currentColor")
+            .style("font-family", "sans-serif")
+            .text("Overall Similarity: 0.417");
+        sim_calc_top_right_svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", height - margin.bottom / 2 - 75)
+            .attr("text-anchor", "middle")
+            .style("font-size", "24px")
+            .style("fill", "currentColor")
+            .style("font-family", "sans-serif")
+            .text("Hover Over Shaded Areas to See Similarity Contribution!");
+
+        sim_calc_bottom_right_svg.attr("viewBox", [0, 0, width, height]);
+
+        sim_calc_bottom_right_svg.append("g")
+            .call(exampleXAxis);
+
+        sim_calc_bottom_right_svg.append("g")
+            .call(exampleYAxis);
+
+        // Add a dashed line at y = 0
+        sim_calc_bottom_right_svg.append("line")
+            .attr("x1", margin.left)
+            .attr("x2", width - margin.right)
+            .attr("y1", exampleY(0))
+            .attr("y2", exampleY(0))
+            .attr("stroke", "currentColor")
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "4,4");
+
+        const quadraticFunction4 = d3.line()
+            .x(d => exampleX(d))
+            .y(d => exampleY((d - 0.5) * (-2 * d + 1)));
+
+        const quadraticData4 = d3.range(0, 1.01, 0.01);
+
+        sim_calc_bottom_right_svg.append("path")
+            .datum(quadraticData4)
+            .attr("fill", "none")
+            .attr("stroke", "green")
+            .attr("stroke-width", 5)
+            .attr("d", quadraticFunction4);
+
+        const quadraticFunction5 = d3.line()
+            .x(d => exampleX(d))
+            .y(d => exampleY((-d + 1.5) * (2 * d - 3)));
+
+        const quadraticData5 = d3.range(1, 2.01, 0.01);
+
+        sim_calc_bottom_right_svg.append("path")
+            .datum(quadraticData5)
+            .attr("fill", "none")
+            .attr("stroke", "green")
+            .attr("stroke-width", 5)
+            .attr("d", quadraticFunction5);
+
+        const quadraticFunction6 = d3.line()
+            .x(d => exampleX(d))
+            .y(d => exampleY((d - 2.5) * (-d + 3)));
+
+        const quadraticData6 = d3.range(2, 3.01, 0.01);
+
+        sim_calc_bottom_right_svg.append("path")
+            .datum(quadraticData6)
+            .attr("fill", "none")
+            .attr("stroke", "green")
+            .attr("stroke-width", 5)
+            .attr("d", quadraticFunction6);
+
+        shadeAreaWithTooltip(0, 1, -0.167, 1, -.5, -2, 1, sim_calc_bottom_right_svg);
+        shadeAreaWithTooltip(1, 2, -0.167, -1, 1.5, 2, -3, sim_calc_bottom_right_svg);
+        shadeAreaWithTooltip(2, 2.5, -0.104, 1, -2.5, -1, 3, sim_calc_bottom_right_svg);
+        shadeAreaWithTooltip(2.5, 3, 0.021, 1, -2.5, -1, 3, sim_calc_bottom_right_svg);
+
+        sim_calc_bottom_right_svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", margin.top / 2 + 30)
+            .attr("text-anchor", "middle")
+            .style("font-size", "24px")
+            .style("fill", "currentColor")
+            .style("font-family", "sans-serif")
+            .text("Overall Similarity: -0.417");
+        sim_calc_bottom_right_svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", height - margin.bottom / 2 - 75)
+            .attr("text-anchor", "middle")
+            .style("font-size", "24px")
+            .style("fill", "currentColor")
+            .style("font-family", "sans-serif")
+            .text("Hover Over Shaded Areas to See Similarity Contribution!");
+
+        sim_calc_bottom_left_svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", height - margin.bottom / 2 - 50)
+            .attr("text-anchor", "middle")
+            .style("font-size", "24px")
+            .style("fill", "currentColor")
+            .style("font-family", "sans-serif")
+            .text("Peaks and valleys are opposite, creating a low similarity");
     });
 
     // Apply theme colors to SVG elements
