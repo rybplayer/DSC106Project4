@@ -254,3 +254,107 @@ svg#parameterplot {
     max-width: 1600px;
     margin: 0 auto;
 }
+
+.note-container {
+    position: relative;
+    display: inline-block;
+    background-color: var(--secondary-bg-color);
+    color: currentColor;
+    border: 1px solid var(--text-color);
+    border-radius: 8px;
+    padding: .5em;
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.note-container:hover {
+    transform: translateY(-10px);
+}
+
+.note-text {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: auto;
+    z-index: 1;
+    padding: 1em;
+}
+
+.note-container:hover .note-text {
+    position: inherit;
+    display: block;
+    background-color: var(--secondary-bg-color);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--text-color);
+    border-radius: 8px;
+    width: 50em;
+    z-index: 1000;
+}
+
+svg#peak-counting-example {
+    width: 100%;
+    max-width: 800px;
+    height: 400px;
+    background-color: var(--plot-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+svg#peak-counting-real {
+    width: 100%;
+    max-width: 800px;
+    height: 400px;
+    background-color: var(--plot-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+#counting-peaks .plots-wrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+#example-side-explanation {
+    width: auto;
+    max-width: 50%;
+    text-align: left;
+}
+
+#interval-selector {
+    display: block;
+    margin-top: 5em;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+
+svg#acc-data-with-steps {
+    width: 100%;
+    max-width: 800px;
+    height: 400px;
+    background-color: var(--plot-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+svg#template {
+    width: 100%;
+    max-width: 400px;
+    height: 400px;
+    background-color: var(--plot-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin: 1rem 0;
+}

@@ -10,6 +10,10 @@ const sim_calc_top_left_svg = d3.select("#sim-calc-top-left");
 const sim_calc_top_right_svg  = d3.select("#sim-calc-top-right");
 const sim_calc_bottom_left_svg = d3.select("#sim-calc-bottom-left");
 const sim_calc_bottom_right_svg  = d3.select("#sim-calc-bottom-right");
+const peak_count_ex_svg = d3.select("#peak-counting-example");
+const peak_count_real_svg = d3.select("#peak-counting-real");
+const acc_data_with_steps = d3.select("#acc-data-with-steps");
+const template_svg = d3.select("svg#template")
 
 let current_stride_temp = null;
 const SECONDS_TO_PLOT = 10;
@@ -237,6 +241,8 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         let strideTemplateReshaped = strideTemplate.map(d => d / 4 + 1.3);
 
         let stride_temp_pwl = new PiecewiseLinear(Array.from({length: strideTemplate.length}, (_, i) => i), strideTemplate);
+
+        stride_temp_pwl.shift(80).plot(template_svg, x, y, "var(--plot-line-color-2)", "altered-template");
     
         // Get initial slider values
         let initialTau = +d3.select("#tau").property("value");
@@ -275,7 +281,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 .attr("cx", paramX_seconds(closestIndex))
                 .attr("cy", paramY(yValue))
                 .attr("r", circle_rad)
-                .style("fill", "var(--plot-line-color-1)")
+                .style("fill", "var(--plot-line-color-2)")
                 .attr("stroke", "black")
                 .attr("stroke-width", 1);
 
@@ -299,6 +305,21 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             sim_scores.push(innerprod_loop);
         }
 
+        let peak_indices = []
+        for (let i = 0; i < sim_scores.length; i++) {
+            let isPeak = true;
+            for (let j = Math.max(0, i - 40); j <= Math.min(sim_scores.length - 1, i + 40); j++) {
+                if (sim_scores[j] > sim_scores[i]) {
+                    isPeak = false;
+                    break;
+                }
+            }
+            if (isPeak) {
+                peak_indices.push(i);
+            }
+        }
+        console.log(peak_indices);
+
         const simLine = d3.line()
             .x((d, i) => paramX_seconds(i))
             .y(d => paramY(d));
@@ -306,7 +327,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         paramsvg.append("path")
             .datum(sim_scores)
             .attr("fill", "none")
-            .attr("stroke", "var(--plot-line-color-1)")
+            .attr("stroke", "green")
             .attr("stroke-width", 2)
             .attr("d", simLine);
 
@@ -666,6 +687,452 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .style("fill", "currentColor")
             .style("font-family", "sans-serif")
             .text("Peaks and valleys are opposite, creating a low similarity");
+
+        const exampleData = [0, 2, 3, 2, 0, 2.5, 1, 2, 0];
+        
+        const peakX = d3.scaleLinear()
+            .domain([0, exampleData.length - 1])
+            .range([margin.left, width - margin.right]);
+
+        const peakY = d3.scaleLinear()
+            .domain([0, 5])
+            .range([height - margin.bottom, margin.top]);
+
+        const peakXAxis = g => g
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(peakX).ticks(exampleData.length).tickSizeOuter(0));
+
+        const peakYAxis = g => g
+            .attr("class", "axis")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(peakY));
+
+        peak_count_ex_svg.attr("viewBox", [0, 0, width, height]);
+
+        peak_count_ex_svg.append("g")
+            .call(peakXAxis);
+
+        peak_count_ex_svg.append("g")
+            .call(peakYAxis);
+
+        const peakLine = d3.line()
+            .x((d, i) => peakX(i))
+            .y(d => peakY(d));
+
+        peak_count_ex_svg.append("path")
+            .datum(exampleData)
+            .attr("fill", "none")
+            .attr("stroke", "var(--plot-line-color-1)")
+            .attr("stroke-width", 2)
+            .attr("d", peakLine);
+
+        peak_count_ex_svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", margin.top / 2)
+            .attr("text-anchor", "middle")
+            .style("font-size", "24px")
+            .style("fill", "currentColor")
+            .style("font-family", "sans-serif")
+            .text("Peak Counting: Example");
+        
+        // Check if the wide interval radio input is checked and add a red circle on peak_count_ex_svg
+        const wideIntervalRadio = document.querySelector('input[name="interval"][value="wide"]');
+        const narrowIntervalRadio = document.querySelector('input[name="interval"][value="narrow"]');
+
+        wideIntervalRadio.addEventListener('change', function() {
+            if (this.checked) {
+            peak_count_ex_svg.selectAll(".peak-circle").remove();
+            peak_count_ex_svg.selectAll(".peak-count").remove();
+            peak_count_ex_svg.selectAll("line").remove();
+            peak_count_ex_svg.append("circle")
+                .attr("class", "peak-circle")
+                .attr("cx", peakX(2))
+                .attr("cy", peakY(3))
+                .attr("r", 5)
+                .style("fill", "red");
+            peak_count_ex_svg.append("circle")
+                .attr("class", "peak-circle")
+                .attr("cx", peakX(5))
+                .attr("cy", peakY(2.5))
+                .attr("r", 5)
+                .style("fill", "red");
+            peak_count_ex_svg.append("line")
+                .attr("x1", peakX(0))
+                .attr("x2", peakX(4))
+                .attr("y1", peakY(3))
+                .attr("y2", peakY(3))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2);
+            peak_count_ex_svg.append("line")
+                .attr("x1", peakX(3))
+                .attr("x2", peakX(7))
+                .attr("y1", peakY(2.5))
+                .attr("y2", peakY(2.5))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2);
+            peak_count_ex_svg.append("text")
+                .attr("class", "peak-count")
+                .attr("x", (width / 2))
+                .attr("y", margin.top / 2 + 100)
+                .attr("text-anchor", "middle")
+                .style("font-size", "24px")
+                .style("fill", "currentColor")
+                .style("font-family", "sans-serif")
+                .text("2 Peaks");
+            peak_count_ex_svg.selectAll(".peak-line").remove();
+            peak_count_ex_svg.append("line")
+                .attr("class", "peak-line")
+                .attr("x1", peakX(2))
+                .attr("x2", peakX(2))
+                .attr("y1", peakY(3))
+                .attr("y2", peakY(0))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "4,4");
+            peak_count_ex_svg.append("line")
+                .attr("class", "peak-line")
+                .attr("x1", peakX(5))
+                .attr("x2", peakX(5))
+                .attr("y1", peakY(2.5))
+                .attr("y2", peakY(0))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "4,4");
+            }
+        });
+
+        narrowIntervalRadio.addEventListener('change', function() {
+            if (this.checked) {
+            peak_count_ex_svg.selectAll(".peak-circle").remove();
+            peak_count_ex_svg.selectAll(".peak-count").remove();
+            peak_count_ex_svg.selectAll("line").remove();
+            peak_count_ex_svg.append("circle")
+                .attr("class", "peak-circle")
+                .attr("cx", peakX(2))
+                .attr("cy", peakY(3))
+                .attr("r", 5)
+                .style("fill", "red");
+            peak_count_ex_svg.append("circle")
+                .attr("class", "peak-circle")
+                .attr("cx", peakX(5))
+                .attr("cy", peakY(2.5))
+                .attr("r", 5)
+                .style("fill", "red");
+            peak_count_ex_svg.append("circle")
+                .attr("class", "peak-circle")
+                .attr("cx", peakX(7))
+                .attr("cy", peakY(2))
+                .attr("r", 5)
+                .style("fill", "red");
+            peak_count_ex_svg.append("line")
+                .attr("x1", peakX(1))
+                .attr("x2", peakX(3))
+                .attr("y1", peakY(3))
+                .attr("y2", peakY(3))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2);
+            peak_count_ex_svg.append("line")
+                .attr("x1", peakX(4))
+                .attr("x2", peakX(6))
+                .attr("y1", peakY(2.5))
+                .attr("y2", peakY(2.5))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2);
+            peak_count_ex_svg.append("line")
+                .attr("x1", peakX(6))
+                .attr("x2", peakX(8))
+                .attr("y1", peakY(2))
+                .attr("y2", peakY(2))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2);
+            peak_count_ex_svg.append("text")
+                .attr("class", "peak-count")
+                .attr("x", (width / 2))
+                .attr("y", margin.top / 2 + 100)
+                .attr("text-anchor", "middle")
+                .style("font-size", "24px")
+                .style("fill", "currentColor")
+                .style("font-family", "sans-serif")
+                .text("3 Peaks");
+            peak_count_ex_svg.selectAll(".peak-line").remove();
+            peak_count_ex_svg.append("line")
+                .attr("class", "peak-line")
+                .attr("x1", peakX(2))
+                .attr("x2", peakX(2))
+                .attr("y1", peakY(3))
+                .attr("y2", peakY(0))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "4,4");
+            peak_count_ex_svg.append("line")
+                .attr("class", "peak-line")
+                .attr("x1", peakX(5))
+                .attr("x2", peakX(5))
+                .attr("y1", peakY(2.5))
+                .attr("y2", peakY(0))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "4,4");
+            peak_count_ex_svg.append("line")
+                .attr("class", "peak-line")
+                .attr("x1", peakX(7))
+                .attr("x2", peakX(7))
+                .attr("y1", peakY(2))
+                .attr("y2", peakY(0))
+                .attr("stroke", "red")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "4,4");
+            }
+
+        });
+
+        // Trigger the event listener to set the initial state
+        if (wideIntervalRadio.checked) {
+            wideIntervalRadio.dispatchEvent(new Event('change'));
+        }
+       
+        const peakXReal = d3.scaleLinear()
+            .domain([0, sim_scores.length - 1])
+            .range([margin.left, width - margin.right]);
+
+        const peakXReal_seconds = d3.scaleLinear()
+            .domain([0, sim_scores.length/80])
+            .range([margin.left, width - margin.right]);
+
+        const peakYReal = d3.scaleLinear()
+            .domain(d3.extent(sim_scores))
+            .range([height - margin.bottom, margin.top]);
+            
+
+        const peakXAxisReal = g => g
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(peakXReal_seconds).ticks(sim_scores.length / 80).tickSizeOuter(0));
+
+        const peakYAxisReal = g => g
+            .attr("class", "axis")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(peakYReal));
+
+        peak_count_real_svg.attr("viewBox", [0, 0, width, height]);
+
+        peak_count_real_svg.append("g")
+            .call(peakXAxisReal);
+
+        peak_count_real_svg.append("g")
+            .call(peakYAxisReal);
+
+        const peakLineReal = d3.line()
+            .x((d, i) => peakXReal(i))
+            .y(d => peakYReal(d));
+
+        peak_count_real_svg.append("path")
+            .datum(sim_scores)
+            .attr("fill", "none")
+            .attr("stroke", "var(--plot-line-color-1)")
+            .attr("stroke-width", 2)
+            .attr("d", peakLineReal);
+
+        peak_count_real_svg.append("text")
+            .attr("x", (width / 2))
+            .attr("y", margin.top / 2 + 20)
+            .attr("text-anchor", "middle")
+            .style("font-size", "24px")
+            .style("fill", "currentColor")
+            .style("font-family", "sans-serif")
+            .text("Peak Counting: Real Data");
+
+        peak_count_real_svg.append("text")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .style("text-anchor", "end")
+            .style("fill", "currentColor")
+            .attr("x", width - margin.right)
+            .attr("y", -10)
+            .attr("fill", "var(--text-color)")
+            .style("font-size", "12px")
+            .style("font-family", "sans-serif")
+            .text("Time (Seconds)");
+
+        peak_count_real_svg.append("text")
+            .attr("transform", `translate(${margin.left},0)`)
+            .attr("x", 10)
+            .attr("y", margin.top)
+            .attr("fill", "currentColor")
+            .attr("text-anchor", "start")
+            .style("font-size", "12px")
+            .text("Similarity");
+
+        // Plot circles at each peak index
+        peak_count_real_svg.selectAll(".peak-circle")
+            .data(peak_indices)
+            .enter()
+            .append("circle")
+            .attr("class", "peak-circle")
+            .attr("cx", d => peakXReal(d))
+            .attr("cy", d => peakYReal(sim_scores[d]))
+            .attr("r", 5)
+            .style("fill", "red");
+
+        peak_count_real_svg.append("line")
+            .attr("x1", margin.left)
+            .attr("x2", width - margin.right)
+            .attr("y1", peakYReal(0))
+            .attr("y2", peakYReal(0))
+            .attr("stroke", "currentColor")
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "4,4");
+
+        // Add dashed red lines from each peak to the line at y = 0
+        peak_count_real_svg.selectAll(".peak-line")
+            .data(peak_indices)
+            .enter()
+            .append("line")
+            .attr("class", "peak-line")
+            .attr("x1", d => peakXReal(d))
+            .attr("x2", d => peakXReal(d))
+            .attr("y1", d => peakYReal(sim_scores[d]))
+            .attr("y2", peakYReal(0))
+            .attr("stroke", "red")
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", "4,4");
+
+        const accX = d3.scaleLinear()
+            .domain([0, values.length - 1])
+            .range([margin.left, width - margin.right]);
+
+        const accX_seconds = d3.scaleLinear()
+            .domain([0, values.length / 80])
+            .range([margin.left, width - margin.right]);
+
+        const accY = d3.scaleLinear()
+            .domain([.6, 2])
+            .nice()
+            .range([height - margin.bottom, margin.top]);
+
+        const accXAxis = g => g
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(accX_seconds).ticks(width / 80).tickSizeOuter(0))
+            .append("text")
+            .attr("x", width - margin.right)
+            .attr("y", -10)
+            .attr("fill", "var(--text-color)")
+            .attr("text-anchor", "end")
+            .text("Time (Seconds)");
+
+        const accYAxis = g => g
+            .attr("class", "axis")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(accY))
+            .append("text")
+            .attr("x", 10)
+            .attr("y", margin.top)
+            .attr("fill", "var(--text-color)")
+            .attr("text-anchor", "start")
+            .text("Acceleration Magnitude (g)");
+
+        acc_data_with_steps.attr("viewBox", [0, 0, width, height]);
+
+        acc_data_with_steps.append("g")
+            .call(accXAxis);
+
+        acc_data_with_steps.append("g")
+            .call(accYAxis);
+
+        const accLine = d3.line()
+            .x((d, i) => accX(i))
+            .y(d => accY(d));
+
+        acc_data_with_steps.append("path")
+            .datum(values)
+            .attr("fill", "none")
+            .attr("stroke", "var(--plot-line-color-1)")
+            .attr("stroke-width", 2)
+            .attr("d", accLine);
+
+        peak_indices.forEach(index => {
+            stride_temp_pwl.shift(index).scale(.4).plot(acc_data_with_steps, accX, accY, "var(--plot-line-color-2)", "altered-template");
+            acc_data_with_steps.append("line")
+                .attr("x1", accX(index))
+                .attr("x2", accX(index))
+                .attr("y1", accY(0.6))
+                .attr("y2", accY(2))
+                .attr("stroke", "var(--plot-line-color-2)")
+                .attr("stroke-width", 2)
+                .attr("opacity", ".25")
+                .attr("stroke-dasharray", "4,4");
+
+            acc_data_with_steps.append("line")
+                .attr("x1", accX(index + 80))
+                .attr("x2", accX(index + 80))
+                .attr("y1", accY(0.6))
+                .attr("y2", accY(2))
+                .attr("stroke", "var(--plot-line-color-2)")
+                .attr("stroke-width", 2)
+                .attr("opacity", ".25")
+                .attr("stroke-dasharray", "4,4");
+        });
+
+        // Add event listeners to each circle on peak_count_real_svg
+        peak_count_real_svg.selectAll(".peak-circle")
+            .on("mouseover", function(event, d) {
+                // Highlight the corresponding step on acc_data_with_steps
+                acc_data_with_steps.selectAll(".highlighted-step").remove();
+
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr("r", 10);
+                
+                acc_data_with_steps.append("line")
+                    .attr("class", "highlighted-step")
+                    .attr("x1", accX(d))
+                    .attr("x2", accX(d))
+                    .attr("y1", accY(0.6))
+                    .attr("y2", accY(2))
+                    .attr("stroke", "red")
+                    .attr("stroke-width", 2)
+                    .attr("stroke-dasharray", "4,4");
+
+                acc_data_with_steps.append("line")
+                    .attr("class", "highlighted-step")
+                    .attr("x1", accX(d + 80))
+                    .attr("x2", accX(d + 80))
+                    .attr("y1", accY(0.6))
+                    .attr("y2", accY(2))
+                    .attr("stroke", "red")
+                    .attr("stroke-width", 2)
+                    .attr("stroke-dasharray", "4,4");
+
+                acc_data_with_steps.append("rect")
+                    .attr("class", "highlighted-step-rect")
+                    .attr("x", accX(d))
+                    .attr("y", accY(2))
+                    .attr("width", accX(d + 80) - accX(d))
+                    .attr("height", accY(0.6) - accY(2))
+                    .attr("fill", "red")
+                    .attr("opacity", 0.1);
+                
+            })
+            .on("mouseout", function() {
+                // Remove the highlight when the mouse leaves the circle
+                acc_data_with_steps.selectAll(".highlighted-step").remove();
+                acc_data_with_steps.selectAll(".highlighted-step-rect").remove();
+                d3.select(this)
+                    .transition()
+                    .duration(200)
+                    .attr("r", 5);
+            });
+
+            peak_count_real_svg.append("text")
+                .attr("x", margin.left + 10)
+                .attr("y", height - margin.bottom / 2 - 30)
+                .attr("text-anchor", "start")
+                .style("font-size", "12px")
+                .style("fill", "currentColor")
+                .style("font-family", "sans-serif")
+                .text("Hover on a dot to see the peak's corresponding step on the graph below");
     });
 
     // Apply theme colors to SVG elements

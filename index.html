@@ -37,6 +37,12 @@
         <div class="plot-container">
             <svg id="basic-functionplot"></svg>
         </div>
+        <p>Then, you compare this acceleration magnitude data to a pattern:</p>
+        <div class="plot-container">
+            <svg id="template"></svg>
+        </div>
+        <p>Researchers found that this shape is what a step looks like accelerometer data.</p>
+        <p>Once you have your acceleration magnitude data, as well as this pattern, you can simply find the similarity between this pattern and your data at each possible timestamp. Timestamps with high similarity are likely where someone's step started. By counting the number of timestamps with high similarity, we can count the number of steps!</p>
     </section>
     <!-- Section 4: Similarity Calculation -->
      <section id="similarity-calculation" class="section">
@@ -67,9 +73,8 @@
 
     <!-- Section 5: CWT Transform -->
     <section id="cwt-transform" class="section">
-        <h1>The CWT transform is one idea.</h1>
-        <p>Basically, fit a normalized "step acceleration magnitude" curve to the data, and count steps.</p>
-        
+        <h1>Finding timestamps with high similarity</h1>
+        <p>At each timestamp, you find the similarity between the data and a step pattern beginning at that timestamp.</p>
         <div class="controls">
             <label id="tau-label">
                 Tau
@@ -80,35 +85,65 @@
                 <input id="sigma" type="range" min="0.1" max=".5" step="0.01" value=".4">
             </label>
         </div>
-        
+        <h2>This is a graph of the similarity at each timestamp, as well as the translated pattern that we're comparing to the accelerometer data</h2>
         <div class="plots-wrapper">
             <div class="plot-container">
                 <svg id="parameterplot"></svg>
             </div>
-            
             <div class="plot-container">
                 <svg id="functionplot"></svg>
             </div>
         </div>
         
-        <div class="explanation">
-            <h2>How Step Counting Works</h2>
-            <p>When we count someone's steps visually, we use our eyes to observe their movement. But for a computer, we need a different approach.</p>
-            
-            <p>Step counting algorithms like ADEPT (Adaptive Empirical Pattern Transformation) use accelerometer data - measurements of acceleration in the x, y, and z directions at high frequency (typically 80Hz or 80 times per second).</p>
-            
-            <p>Instead of using all three directions of acceleration, we use the overall magnitude calculated as sqrt(x² + y² + z²). This simplifies the data and makes it orientation-independent.</p>
-            
-            <p>The key insight is that when you walk, each step creates a distinctive pattern in the acceleration data. Researchers identify this pattern by recording both video and accelerometer data simultaneously, having experts mark where steps begin and end, and extracting the typical "shape" of a step's acceleration profile.</p>
-            
-            <p>To count steps, we compare this empirical template pattern with our acceleration data using an inner product (similar to a dot product for vectors). A high positive value indicates high similarity, suggesting a step has occurred.</p>
-            
-            <p>Since we don't know when steps occur or how long they take, we shift the template to different positions (tau) and stretch/compress it (sigma) to find the best matches. The peaks in similarity correspond to steps.</p>
-            
-            <p>The interactive visualization above lets you explore how changing these parameters affects the matching process.</p>
-
-            <p> <a href="https://docs.google.com/document/d/1xJ1Rywjtpx7pNN0VqV02o82idn6ey_pL3LhCW_lVaDs/edit?usp=sharing">Link to writeup</a></p>
+        <div class="note-container">
+            <label for="note">A minor note on the step pattern </label>
+            <div id="note" class="note-text">
+                You might have noticed that for some particular bad matches, our similarity is negative. But how is that possible? We have two strictly positive functions, shouldn't they multiply to get another strictly positive function, which would have a positive integral? The answer is yes! The step pattern on the graph is actually a scaled and translated version of the real thing. The real thing is centered on the origin and actually has mean zero. This is because if you don't impose this restriction, you could always get a step pattern that gives higher similarity by just translating your pattern upwards, since you would be integrating a bigger and bigger function.
+            </div>
         </div>
+
+    </section>
+
+    <!--Section 6: Counting Peaks-->
+    <section id="counting-peaks" class="section">
+        <h1>Now we just count the number of peaks in the similarity scores</h1>
+        <h2>How exactly? Here's one easy way.</h2>
+
+        <div class="plots-wrapper">
+            <div id="example-side-explanation">
+                <div id="example-explanation-text">
+                    You simply take every data point that's the biggest in some interval around itself. Wider intervals will ignore subsequent peaks and smaller intervals will get most local maximums, even ones that are next to bigger local maximums.              
+                </div>
+                <h3 style="margin-top: 2em" style="justify-content: center">Click to see how interval width can affect the number of peaks</h3>
+                <div id="interval-selector">
+                    <label>
+                        <input type="radio" name="interval" value="wide" checked>
+                        Wide Interval
+                    </label>
+                    <label>
+                        <input type="radio" name="interval" value="narrow">
+                        Narrow Interval
+                    </label>
+                </div>
+            </div>
+            <div class="plot-container">
+                <svg id="peak-counting-example"></svg>
+            </div>
+        </div>
+        <h3>To find the peaks in our similarity scores, we use the most natural interval width: one the same length as our step pattern width (1 second). This is the result:</h3>
+        <div class="plots-wrapper">
+            <div class="plot-container">
+                <svg id="peak-counting-real"></svg>
+            </div>
+        </div>
+        <h3>These peaks in similarity correspond to the following 10 steps:</h3>
+        <div class="plots-wrapper">
+            <div class="plot-container">
+                <svg id="acc-data-with-steps"></svg>
+            </div>
+        </div>
+        This plot is very messy, but here's what you should focus on. First, notice that the peaks in the red lines (our step patterns) generally match the peaks of the blue line (the real accelerometer data) and likewise with the valleys. This is a good indication that our peak similarity finding algorithm works. Additionally, the end of one step generally lines up with the start of the next step (the dashed vertical lines), which is a good indication that the algorithm is correctly finding the cyclic behavior of someone continuously walking.
+        <h2>And we're done! The algorithm found 10 peaks, so we have 10 steps! We've successfully counted the number of steps!</h2>
     </section>
 
     <script type="module" src="main.js"></script>
