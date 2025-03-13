@@ -142,7 +142,7 @@
                 <svg id="acc-data-with-steps"></svg>
             </div>
         </div>
-        This plot is very messy, but here's what you should focus on. First, notice that the peaks in the red lines (our step patterns) generally match the peaks of the blue line (the real accelerometer data) and likewise with the valleys. This is a good indication that our peak similarity finding algorithm works. Additionally, the end of one step generally lines up with the start of the next step (the dashed vertical lines), which is a good indication that the algorithm is correctly finding the cyclic behavior of someone continuously walking.
+        Notice how the end of one step generally lines up with the beginning of the next step! This is exactly what we want, since walking is cyclic and steps are discrete.
         <h2>And we're done! The algorithm found 10 peaks, so we have 10 steps! We've successfully counted the number of steps!</h2>
     </section>
 

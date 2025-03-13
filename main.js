@@ -729,7 +729,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
         peak_count_ex_svg.append("text")
             .attr("x", (width / 2))
-            .attr("y", margin.top / 2)
+            .attr("y", margin.top / 2 + 50)
             .attr("text-anchor", "middle")
             .style("font-size", "24px")
             .style("fill", "currentColor")
@@ -936,7 +936,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
         peak_count_real_svg.append("text")
             .attr("x", (width / 2))
-            .attr("y", margin.top / 2 + 20)
+            .attr("y", margin.top / 2 + 50)
             .attr("text-anchor", "middle")
             .style("font-size", "24px")
             .style("fill", "currentColor")
@@ -1052,7 +1052,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .attr("d", accLine);
 
         peak_indices.forEach(index => {
-            stride_temp_pwl.shift(index).scale(.4).plot(acc_data_with_steps, accX, accY, "var(--plot-line-color-2)", "altered-template");
+            
             acc_data_with_steps.append("line")
                 .attr("x1", accX(index))
                 .attr("x2", accX(index))
@@ -1074,65 +1074,43 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 .attr("stroke-dasharray", "4,4");
         });
 
-        // Add event listeners to each circle on peak_count_real_svg
-        peak_count_real_svg.selectAll(".peak-circle")
-            .on("mouseover", function(event, d) {
-                // Highlight the corresponding step on acc_data_with_steps
-                acc_data_with_steps.selectAll(".highlighted-step").remove();
+        peak_count_real_svg.on("mousemove", function (event) {
+            const [mouseX] = d3.pointer(event);
+            const closestPeakIndex = peak_indices.reduce((prev, curr) => 
+                Math.abs(peakXReal(curr) - mouseX) < Math.abs(peakXReal(prev) - mouseX) ? curr : prev
+            );
 
-                d3.select(this)
-                    .transition()
-                    .duration(200)
-                    .attr("r", 10);
-                
-                acc_data_with_steps.append("line")
-                    .attr("class", "highlighted-step")
-                    .attr("x1", accX(d))
-                    .attr("x2", accX(d))
-                    .attr("y1", accY(0.6))
-                    .attr("y2", accY(2))
-                    .attr("stroke", "red")
-                    .attr("stroke-width", 2)
-                    .attr("stroke-dasharray", "4,4");
+            peak_count_real_svg.selectAll(".closest-peak-circle").remove();
 
-                acc_data_with_steps.append("line")
-                    .attr("class", "highlighted-step")
-                    .attr("x1", accX(d + 80))
-                    .attr("x2", accX(d + 80))
-                    .attr("y1", accY(0.6))
-                    .attr("y2", accY(2))
-                    .attr("stroke", "red")
-                    .attr("stroke-width", 2)
-                    .attr("stroke-dasharray", "4,4");
+            peak_count_real_svg.append("circle")
+                .attr("class", "closest-peak-circle")
+                .attr("cx", peakXReal(closestPeakIndex))
+                .attr("cy", peakYReal(sim_scores[closestPeakIndex]))
+                .attr("r", 10)
+                .style("fill", "red")
+                .attr("stroke", "black")
+                .attr("stroke-width", 1);
+            
+            acc_data_with_steps.selectAll(".highlighted-step-rect").remove();
 
-                acc_data_with_steps.append("rect")
-                    .attr("class", "highlighted-step-rect")
-                    .attr("x", accX(d))
-                    .attr("y", accY(2))
-                    .attr("width", accX(d + 80) - accX(d))
-                    .attr("height", accY(0.6) - accY(2))
-                    .attr("fill", "red")
-                    .attr("opacity", 0.1);
-                
-            })
-            .on("mouseout", function() {
-                // Remove the highlight when the mouse leaves the circle
-                acc_data_with_steps.selectAll(".highlighted-step").remove();
-                acc_data_with_steps.selectAll(".highlighted-step-rect").remove();
-                d3.select(this)
-                    .transition()
-                    .duration(200)
-                    .attr("r", 5);
-            });
+            acc_data_with_steps.append("rect")
+                .attr("class", "highlighted-step-rect")
+                .attr("x", accX(closestPeakIndex))
+                .attr("y", accY(2))
+                .attr("width", accX(closestPeakIndex + 80) - accX(closestPeakIndex))
+                .attr("height", accY(0.6) - accY(2))
+                .attr("fill", "red")
+                .attr("opacity", 0.1);
+        })
 
-            peak_count_real_svg.append("text")
-                .attr("x", margin.left + 10)
-                .attr("y", height - margin.bottom / 2 - 30)
-                .attr("text-anchor", "start")
-                .style("font-size", "12px")
-                .style("fill", "currentColor")
-                .style("font-family", "sans-serif")
-                .text("Hover on a dot to see the peak's corresponding step on the graph below");
+        peak_count_real_svg.append("text")
+            .attr("x", margin.left + 10)
+            .attr("y", height - margin.bottom / 2 - 30)
+            .attr("text-anchor", "start")
+            .style("font-size", "12px")
+            .style("fill", "currentColor")
+            .style("font-family", "sans-serif")
+            .text("Hover on a dot to see the peak's corresponding step on the graph below");
     });
 
     // Apply theme colors to SVG elements
