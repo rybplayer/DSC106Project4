@@ -591,7 +591,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .on("mousemove", throttle(function(event) {
                 tooltip.style("top", (event.pageY - 10) + "px")
                 .style("left", (event.pageX + 10) + "px");
-            }, 50))
+            }, 0))
             .on("mouseleave", function() {
                 tooltip.style("visibility", "hidden");
                 d3.select(this).attr("opacity", 0.5); // Reset the area opacity
@@ -1195,7 +1195,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 .attr("width", accX(closestPeakIndex + 80) - accX(closestPeakIndex))
                 .attr("height", accY(0.6) - accY(2))
                 .style("visibility", "visible");
-        }, 100));
+        }, 0));
 
         // Hide elements when mouse/touch leaves
         peak_count_real_svg.on("mouseleave touchend", function() {
