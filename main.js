@@ -18,10 +18,33 @@ const template_svg = d3.select("svg#template")
 let current_stride_temp = null;
 const SECONDS_TO_PLOT = 10;
 
+// Helper function to throttle function calls - simplified version
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
+
+// Helper function to debounce function calls
+function debounce(func, wait) {
+    let timeout;
+    return function() {
+        const context = this;
+        const args = arguments;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+}
+
 // Apply theme-based colors to SVG elements
 function updateSvgColors() {
-    const isThemeDark = document.body.getAttribute('data-theme') === 'dark';
-    
     // Update SVG elements with theme colors
     d3.selectAll("svg")
         .style("background-color", "var(--plot-bg-color)");
@@ -242,8 +265,56 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
         let stride_temp_pwl = new PiecewiseLinear(Array.from({length: strideTemplate.length}, (_, i) => i), strideTemplate);
 
-        stride_temp_pwl.shift(80).plot(template_svg, x, y, "var(--plot-line-color-2)", "altered-template");
-    
+        // Create scales for the template plot
+        const templateX = d3.scaleLinear()
+            .domain([0, strideTemplate.length - 1])
+            .range([margin.left, 400 - margin.right]);
+
+        const templateY = d3.scaleLinear()
+            .domain([d3.min(strideTemplateReshaped) * 0.9, d3.max(strideTemplateReshaped) * 1.1])
+            .range([400 - margin.bottom, margin.top]);
+
+        // Setup template plot
+        template_svg.attr("viewBox", [0, 0, 400, 400]);
+        
+        template_svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", `translate(0,${400 - margin.bottom})`)
+            .call(d3.axisBottom(templateX).ticks(5).tickSizeOuter(0));
+            
+        template_svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(templateY).ticks(5));
+
+        // Add axis labels
+        template_svg.append("text")
+            .attr("transform", `translate(${400/2},${400 - margin.bottom/3})`)
+            .style("text-anchor", "middle")
+            .style("fill", "var(--text-color)")
+            .style("font-size", "12px")
+            .text("Time (Seconds)");
+            
+        // Add y-axis label
+        template_svg.append("text")
+            .attr("transform", `translate(${margin.left/3},${(400 - margin.top - margin.bottom)/2 + margin.top}) rotate(-90)`)
+            .style("text-anchor", "middle")
+            .style("fill", "var(--text-color)")
+            .style("font-size", "12px")
+            .text("Acceleration Magnitude (g)");
+
+        // Plot the template
+        const templateLine = d3.line()
+            .x((d, i) => templateX(i))
+            .y(d => templateY(d));
+            
+        template_svg.append("path")
+            .datum(strideTemplateReshaped)
+            .attr("fill", "none")
+            .attr("stroke", "var(--plot-line-color-2)")
+            .attr("stroke-width", 2)
+            .attr("d", templateLine);
+
         // Get initial slider values
         let initialTau = +d3.select("#tau").property("value");
         let initialSigma = +d3.select("#sigma").property("value");
@@ -265,30 +336,39 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .attr("text-anchor", "middle")
             .style("fill", "var(--text-color)");
             
-        paramsvg.on("mousemove", function(event) {
+        // Create the hover circle once and just update its position
+        const hoverCircle = paramsvg.append("circle")
+            .attr("class", "hover-circle")
+            .attr("r", circle_rad)
+            .style("fill", "var(--plot-line-color-2)")
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .style("visibility", "hidden");
+
+        // Simple mousemove handler for paramsvg - works for both desktop and mobile
+        paramsvg.on("mousemove touchmove", throttle(function(event) {
             const [mouseX] = d3.pointer(event);
             const xValue = paramX_seconds.invert(mouseX);
             const closestIndex = Math.round(xValue);
 
-            // Check if the mouse is within the bounds of the x axis
+            // Update hover circle when mouse is within bounds
             if (closestIndex >= 0 && closestIndex < sim_scores.length) {
-            const yValue = sim_scores[closestIndex];
+                const yValue = sim_scores[closestIndex];
+                
+                hoverCircle
+                    .attr("cx", paramX_seconds(closestIndex))
+                    .attr("cy", paramY(yValue))
+                    .style("visibility", "visible");
 
-            paramsvg.selectAll(".hover-circle").remove();
-
-            paramsvg.append("circle")
-                .attr("class", "hover-circle")
-                .attr("cx", paramX_seconds(closestIndex))
-                .attr("cy", paramY(yValue))
-                .attr("r", circle_rad)
-                .style("fill", "var(--plot-line-color-2)")
-                .attr("stroke", "black")
-                .attr("stroke-width", 1);
-
-            d3.select("#tau").property("value", closestIndex).dispatch("input");
+                d3.select("#tau").property("value", closestIndex).dispatch("input");
             } else {
-            paramsvg.selectAll(".hover-circle").remove();
+                hoverCircle.style("visibility", "hidden");
             }
+        }, 100)); // Reasonable throttle time
+
+        // Hide the hover circle when mouse/touch leaves
+        paramsvg.on("mouseleave touchend", function() {
+            hoverCircle.style("visibility", "hidden");
         });
 
         const xValues = paramX.domain();
@@ -305,6 +385,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             sim_scores.push(innerprod_loop);
         }
 
+        // Find peaks in similarity scores
         let peak_indices = []
         for (let i = 0; i < sim_scores.length; i++) {
             let isPeak = true;
@@ -320,6 +401,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         }
         console.log(peak_indices);
 
+        // Plot similarity scores
         const simLine = d3.line()
             .x((d, i) => paramX_seconds(i))
             .y(d => paramY(d));
@@ -405,7 +487,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .range([margin.left, width - margin.right]);
 
         const exampleY = d3.scaleLinear()
-            .domain([-1, 1])
+            .domain([-1.5, 1.5])  // Expanded domain to include all data points
             .range([height - margin.bottom, margin.top]);
 
         const exampleXAxis = g => g
@@ -495,16 +577,17 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .style("padding", "5px")
             .text(`Similarity Score Contribution: ${A}`);
 
+            // Use mouseenter/mouseleave instead of mouseover/mouseout for better mobile performance
             areaPath
-            .on("mouseover", function(event) {
+            .on("mouseenter", function(event) {
                 tooltip.style("visibility", "visible");
                 d3.select(this).attr("opacity", 0.8); // Highlight the area on hover
             })
-            .on("mousemove", function(event) {
+            .on("mousemove", throttle(function(event) {
                 tooltip.style("top", (event.pageY - 10) + "px")
                 .style("left", (event.pageX + 10) + "px");
-            })
-            .on("mouseout", function() {
+            }, 50))
+            .on("mouseleave", function() {
                 tooltip.style("visibility", "hidden");
                 d3.select(this).attr("opacity", 0.5); // Reset the area opacity
             });
@@ -931,7 +1014,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .datum(sim_scores)
             .attr("fill", "none")
             .attr("stroke", "orange")
-            .attr("stroke-width", 2)
+            .attr("stroke-width", 3)
             .attr("d", peakLineReal);
 
         peak_count_real_svg.append("text")
@@ -994,7 +1077,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .attr("y1", d => peakYReal(sim_scores[d]))
             .attr("y2", peakYReal(0))
             .attr("stroke", "red")
-            .attr("stroke-width", 2)
+            .attr("stroke-width", 3)
             .attr("stroke-dasharray", "4,4");
 
         const accX = d3.scaleLinear()
@@ -1048,7 +1131,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .datum(values)
             .attr("fill", "none")
             .attr("stroke", "var(--plot-line-color-1)")
-            .attr("stroke-width", 2)
+            .attr("stroke-width", 3)
             .attr("d", accLine);
 
         peak_indices.forEach(index => {
@@ -1059,8 +1142,8 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 .attr("y1", accY(0.6))
                 .attr("y2", accY(2))
                 .attr("stroke", "var(--plot-line-color-2)")
-                .attr("stroke-width", 2)
-                .attr("opacity", ".25")
+                .attr("stroke-width", 3)
+                .attr("opacity", ".5")
                 .attr("stroke-dasharray", "4,4");
 
             acc_data_with_steps.append("line")
@@ -1069,48 +1152,51 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 .attr("y1", accY(0.6))
                 .attr("y2", accY(2))
                 .attr("stroke", "var(--plot-line-color-2)")
-                .attr("stroke-width", 2)
-                .attr("opacity", ".25")
+                .attr("stroke-width", 3)
+                .attr("opacity", ".5")
                 .attr("stroke-dasharray", "4,4");
         });
 
-        peak_count_real_svg.on("mousemove", function (event) {
+        // Elements for peak_count_real_svg mousemove handler
+        const closestPeakCircle = peak_count_real_svg.append("circle")
+            .attr("class", "closest-peak-circle")
+            .attr("r", 10)
+            .style("fill", "red")
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .style("visibility", "hidden");
+
+        const highlightedStepRect = acc_data_with_steps.append("rect")
+            .attr("class", "highlighted-step-rect")
+            .attr("fill", "red")
+            .attr("opacity", 0.1)
+            .style("visibility", "hidden");
+
+        // Simple mousemove handler for peak_count_real_svg - works for both desktop and mobile
+        peak_count_real_svg.on("mousemove touchmove", throttle(function(event) {
             const [mouseX] = d3.pointer(event);
             const closestPeakIndex = peak_indices.reduce((prev, curr) => 
                 Math.abs(peakXReal(curr) - mouseX) < Math.abs(peakXReal(prev) - mouseX) ? curr : prev
             );
 
-            peak_count_real_svg.selectAll(".closest-peak-circle").remove();
-
-            peak_count_real_svg.append("circle")
-                .attr("class", "closest-peak-circle")
+            closestPeakCircle
                 .attr("cx", peakXReal(closestPeakIndex))
                 .attr("cy", peakYReal(sim_scores[closestPeakIndex]))
-                .attr("r", 10)
-                .style("fill", "red")
-                .attr("stroke", "black")
-                .attr("stroke-width", 1);
+                .style("visibility", "visible");
             
-            acc_data_with_steps.selectAll(".highlighted-step-rect").remove();
-
-            acc_data_with_steps.append("rect")
-                .attr("class", "highlighted-step-rect")
+            highlightedStepRect
                 .attr("x", accX(closestPeakIndex))
                 .attr("y", accY(2))
                 .attr("width", accX(closestPeakIndex + 80) - accX(closestPeakIndex))
                 .attr("height", accY(0.6) - accY(2))
-                .attr("fill", "red")
-                .attr("opacity", 0.1);
-        })
+                .style("visibility", "visible");
+        }, 100));
 
-        peak_count_real_svg.append("text")
-            .attr("x", margin.left + 10)
-            .attr("y", height - margin.bottom / 2 - 30)
-            .attr("text-anchor", "start")
-            .style("font-size", "12px")
-            .style("fill", "currentColor")
-            .style("font-family", "sans-serif")
-            .text("Hover on a dot to see the peak's corresponding step on the graph below");
+        // Hide elements when mouse/touch leaves
+        peak_count_real_svg.on("mouseleave touchend", function() {
+            closestPeakCircle.style("visibility", "hidden");
+            highlightedStepRect.style("visibility", "hidden");
+        });
     });
 
     // Apply theme colors to SVG elements

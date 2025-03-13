@@ -1,27 +1,35 @@
+/* Base styles */
 :root {
     --background-color: #ffffff;
     --text-color: #333333;
     --secondary-bg-color: #f5f5f7;
     --border-color: #e0e0e0;
+    --plot-border-color: #d0d0d0;
     --highlight-color: #0071e3;
     --plot-bg-color: #ffffff;
     --plot-grid-color: #e0e0e0;
-    --plot-line-color-1: #0071e3;
-    --plot-line-color-2: #ff3b30;
+    --plot-line-color-1: #0057b3;
+    --plot-line-color-2: #d92b20;
+    --link-color: #0057b3;
+    --link-visited-color: #6a4ca3;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 16px;
 }
 
+/* Dark theme */
 [data-theme="dark"] {
     --background-color: #1c1c1e;
     --text-color: #f5f5f7;
     --secondary-bg-color: #2c2c2e;
     --border-color: #3a3a3c;
+    --plot-border-color: #3a3a3c;
     --highlight-color: #0a84ff;
     --plot-bg-color: #2c2c2e;
     --plot-grid-color: #3a3a3c;
-    --plot-line-color-1: #0a84ff;
-    --plot-line-color-2: #ff453a;
+    --plot-line-color-1: #5eafff;
+    --plot-line-color-2: #ff6b63;
+    --link-color: #5eafff;
+    --link-visited-color: #b79cff;
 }
 
 * {
@@ -35,6 +43,9 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.6;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
 }
 
 .theme-selector {
@@ -65,6 +76,10 @@ body {
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.8s ease, transform 0.8s ease;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
 }
 
 .section.active {
@@ -81,7 +96,13 @@ h1 {
 h2 {
     font-size: 2rem;
     margin-bottom: 1.5rem;
-    font-weight: 600;
+    font-weight: 400;
+}
+
+h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-weight: 400;
 }
 
 p {
@@ -138,13 +159,26 @@ input[type="range"]::-webkit-slider-thumb {
     margin: 2rem auto;
 }
 
+svg#functionplot,
+svg#parameterplot,
+svg#basic-functionplot,
+svg#sim-calc-top-left,
+svg#sim-calc-top-right,
+svg#sim-calc-bottom-left,
+svg#sim-calc-bottom-right,
+svg#peak-counting-example,
+svg#peak-counting-real,
+svg#acc-data-with-steps,
+svg#template {
+    background-color: var(--plot-bg-color);
+    border: 1px solid var(--plot-border-color);
+    border-radius: 8px;
+}
+
 svg#functionplot {
     width: 100%;
     max-width: 800px;
     height: 400px;
-    background-color: var(--plot-bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
     margin: 1rem 0;
 }
 
@@ -152,12 +186,9 @@ svg#parameterplot {
     width: 100%;
     max-width: 800px;
     height: 400px;
-    background-color: var(--plot-bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin: 1rem 0;
     overflow: visible;
     padding: 1em;
+    margin: 1rem 0;
 }
 
 #cwt-transform svg#functionplot,
@@ -170,10 +201,12 @@ svg#parameterplot {
     width: 100%;
     max-width: 800px;
     margin: 1rem auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
-/* Side-by-side plots for CWT section */
-#cwt-transform .plots-wrapper {
+.plots-wrapper {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -182,25 +215,6 @@ svg#parameterplot {
     width: 100%;
     max-width: 1600px;
     margin: 0 auto;
-}
-
-#cwt-transform .plot-container {
-    flex: 1;
-    max-width: 700px;
-    min-width: 300px;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1200px) {
-    #cwt-transform .plots-wrapper {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    #cwt-transform .plot-container {
-        width: 100%;
-        max-width: 800px;
-    }
 }
 
 /* Sprite controls styling */
@@ -244,15 +258,18 @@ svg#parameterplot {
     font-size: 48px;
 }
 
-#similarity-calculation .plots-wrapper {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 20px;
+#similarity-calculation .plot-container {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    margin: 0.5rem auto;
+}
+
+#similarity-calculation svg {
     width: 100%;
-    max-width: 1600px;
-    margin: 0 auto;
+    height: auto;
+    aspect-ratio: 2/1;
+    padding: 0;
 }
 
 .note-container {
@@ -260,46 +277,54 @@ svg#parameterplot {
     display: inline-block;
     background-color: var(--secondary-bg-color);
     color: currentColor;
-    border: 1px solid var(--text-color);
     border-radius: 8px;
-    padding: .5em;
-    transition: transform 0.3s ease;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    padding: 1em;
+    margin: 1em auto;
+    max-width: 800px;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: background-color 0.3s ease;
 }
 
 .note-container:hover {
-    transform: translateY(-10px);
+    background-color: var(--secondary-bg-color);
+}
+
+.note-container label {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+    position: relative;
+    min-height: 24px;
+}
+
+.note-container label::after {
+    content: '▼';
+    position: absolute;
+    right: 0;
+    transition: transform 0.3s ease;
+}
+
+.note-container.expanded label::after {
+    transform: rotate(180deg);
 }
 
 .note-text {
     display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    height: auto;
-    z-index: 1;
-    padding: 1em;
+    margin-top: 0.5em;
+    line-height: 1.5;
 }
 
-.note-container:hover .note-text {
-    position: inherit;
+.note-container.expanded .note-text {
     display: block;
-    background-color: var(--secondary-bg-color);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-    border: 1px solid var(--text-color);
-    border-radius: 8px;
-    width: 50em;
-    z-index: 1000;
 }
 
 svg#peak-counting-example {
     width: 100%;
     max-width: 800px;
     height: 400px;
-    background-color: var(--plot-bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
     margin: 1rem 0;
 }
 
@@ -307,54 +332,246 @@ svg#peak-counting-real {
     width: 100%;
     max-width: 800px;
     height: 400px;
-    background-color: var(--plot-bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
     margin: 1rem 0;
 }
 
-#counting-peaks .plots-wrapper {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 20px;
-    width: 100%;
-    max-width: 1600px;
-    margin: 0 auto;
+@media (max-width: 768px) {
+    .plots-wrapper {
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        gap: 10px;
+        max-width: 100%;
+        padding: 0;
+        margin: 0 auto;
+    }
+    
+    .plot-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0.5rem auto;
+    }
+    
+    .integral-symbol {
+        font-size: 36pt;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+        word-wrap: break-word;
+        hyphens: auto;
+    }
+    
+    h2 {
+        font-size: 1.3rem;
+        word-wrap: break-word;
+        hyphens: auto;
+    }
+    
+    h3 {
+        font-size: 1.1rem;
+        word-wrap: break-word;
+        hyphens: auto;
+    }
+    
+    p {
+        font-size: 1rem;
+        word-wrap: break-word;
+        hyphens: auto;
+    }
+    
+    .section {
+        padding: 1rem 1rem;
+        width: 100%;
+        overflow-x: hidden;
+    }
+    
+    .controls {
+        flex-direction: column;
+    }
+    
+    input[type="range"] {
+        width: 100%;
+        max-width: 250px;
+    }
+    
+    .note-container:hover .note-text {
+        width: 100%;
+        max-width: 90vw;
+    }
+    
+    #similarity-calculation .plots-wrapper {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    #similarity-calculation .plot-container {
+        width: 100%;
+    }
+    
+    svg {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    svg#functionplot,
+    svg#parameterplot,
+    svg#basic-functionplot,
+    svg#sim-calc-top-left,
+    svg#sim-calc-top-right,
+    svg#sim-calc-bottom-left,
+    svg#sim-calc-bottom-right,
+    svg#peak-counting-example,
+    svg#peak-counting-real,
+    svg#acc-data-with-steps,
+    svg#template {
+        height: 250px;
+        width: 100%;
+        max-width: 100%;
+        margin: 0.5rem auto;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    .plot-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0.5rem auto;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    .note-container {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin: 1em 0;
+    }
+    
+    html, body {
+        overflow-x: hidden;
+        width: 100%;
+        position: relative;
+    }
+}
+
+@media (max-width: 390px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.2rem;
+    }
+    
+    h3 {
+        font-size: 1rem;
+    }
+    
+    p {
+        font-size: 0.9rem;
+    }
+    
+    .section {
+        padding: 0.8rem;
+    }
 }
 
 #example-side-explanation {
-    width: auto;
-    max-width: 50%;
-    text-align: left;
+    width: 100%;
+    max-width: 800px;
+    text-align: center;
+    margin: 0 auto 1em auto;
 }
 
 #interval-selector {
     display: block;
-    margin-top: 5em;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
     margin-left: auto;
     margin-right: auto;
     text-align: center;
 }
 
+#interval-selector label {
+    margin: 0 10px;
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+#interval-selector input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+}
 
 svg#acc-data-with-steps {
     width: 100%;
     max-width: 800px;
     height: 400px;
-    background-color: var(--plot-bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
     margin: 1rem 0;
 }
 
 svg#template {
     width: 100%;
     max-width: 400px;
+    height: 300px;
+    margin: 1rem auto;
+    display: block;
+}
+
+svg#basic-functionplot {
+    width: 100%;
+    max-width: 800px;
     height: 400px;
-    background-color: var(--plot-bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin: 1rem 0;
+    margin: 1rem auto;
+    display: block;
+}
+
+a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:visited {
+    color: var(--link-visited-color);
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a:active {
+    opacity: 0.8;
+}
+
+.integral-symbol {
+    font-size: 48pt;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+    line-height: 0.8;
+    margin: 0 5px;
+    position: relative;
+    top: 10px;
+}
+
+#conclusion ol {
+    font-size: 1.2rem;
+    line-height: 1.8;
+}
+
+#conclusion li {
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+    #conclusion ol {
+        font-size: 1rem;
+        padding-left: 2rem;
+    }
 }

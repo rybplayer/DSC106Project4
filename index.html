@@ -20,7 +20,7 @@
 
     <!-- Section 1: Introduction -->
     <section id="intro" class="section">
-        <h1>How does your phone count your steps? 🚶‍➡️🚶‍♀️‍➡️</h1>
+        <h1>How does a phone 📱 count your steps? 🚶‍➡️🚶‍♀️‍➡️</h1>
         <h2>Ryan Batubara, Isaiah Fang, Matt Tokunaga</h2>
         <h3> <a href="https://docs.google.com/document/d/1xJ1Rywjtpx7pNN0VqV02o82idn6ey_pL3LhCW_lVaDs/edit?usp=sharing">Link to writeup</a></h3>
         <h3><a href="https://physionet.org/content/minute-level-step-count-nhanes/1.0.0/">Link to physionet data</a></h3>
@@ -35,7 +35,7 @@
 
     <!-- Section 3: Computer Approach -->
     <section id="computer-approach" class="section">
-        <h1>But how would you make a computer count steps?</h1>
+        <h1>But how does a computer count steps?</h1>
         <p>One idea is measuring movement and finding its magnitude.</p>
         <div class="plot-container">
             <svg id="basic-functionplot"></svg>
@@ -47,12 +47,13 @@
         <p>Researchers found that this shape is what a step looks like accelerometer data.</p>
         <p>Once you have your acceleration magnitude data, as well as this pattern, you can simply find the similarity between this pattern and your data at each possible timestamp. Timestamps with high similarity are likely where someone's step started. By counting the number of timestamps with high similarity, we can count the number of steps!</p>
     </section>
+    
     <!-- Section 4: Similarity Calculation -->
      <section id="similarity-calculation" class="section">
         <h1>How is similarity calculated?</h1>
         <h2>We simply take the two functions, multiply them, and integrate the result!</h2>
         <h2><span style="color: green">Green</span> = <span style="color: var(--plot-line-color-2)">Red</span> &sdot; <span style="color: var(--plot-line-color-1)">Blue</span></h2>
-        <h2><span style="color: orange">Similarity</span> = <span style="font-size: 48pt">&int;</span> <span style="color: green">Green</span></h2>
+        <h2><span style="color: orange">Similarity</span> = <span class="integral-symbol">&int;</span> <span style="color: green">Green</span></h2>
         <h3>Example #1: A close match!</h3>
         <div class="plots-wrapper">
             <div class="plot-container">
@@ -78,16 +79,7 @@
     <section id="cwt-transform" class="section">
         <h1>Finding timestamps with high similarity</h1>
         <p>At each timestamp, you find the similarity between the data and a step pattern beginning at that timestamp.</p>
-        <div class="controls">
-            <label id="tau-label">
-                Tau
-                <input id="tau" type="range" min="0" max="800" value="0">
-            </label>
-            <label id="sigma-label">
-                Sigma
-                <input id="sigma" type="range" min="0.1" max=".5" step="0.01" value=".4">
-            </label>
-        </div>
+        
         <h2>This is a graph of the similarity at each timestamp, as well as the translated pattern that we're comparing to the accelerometer data</h2>
         <div class="plots-wrapper">
             <div class="plot-container">
@@ -98,9 +90,21 @@
             </div>
         </div>
         
+        <!-- Hidden sliders for functionality -->
+        <div style="display: none;">
+            <label id="tau-label">
+                Tau
+                <input id="tau" type="range" min="0" max="800" value="0">
+            </label>
+            <label id="sigma-label">
+                Sigma
+                <input id="sigma" type="range" min="0.1" max=".5" step="0.01" value=".4">
+            </label>
+        </div>
+        
         <div class="note-container">
-            <label for="note">A minor note on the step pattern </label>
-            <div id="note" class="note-text">
+            <label>A minor note on the step pattern</label>
+            <div class="note-text">
                 You might have noticed that for some particular bad matches, our similarity is negative. But how is that possible? We have two strictly positive functions, shouldn't they multiply to get another strictly positive function, which would have a positive integral? The answer is yes! The step pattern on the graph is actually a scaled and translated version of the real thing. The real thing is centered on the origin and actually has mean zero. This is because if you don't impose this restriction, you could always get a step pattern that gives higher similarity by just translating your pattern upwards, since you would be integrating a bigger and bigger function.
             </div>
         </div>
@@ -112,41 +116,51 @@
         <h1>Now we just count the number of peaks in the similarity scores</h1>
         <h2>How exactly? Here's one easy way.</h2>
 
-        <div class="plots-wrapper">
-            <div id="example-side-explanation">
-                <div id="example-explanation-text">
-                    You simply take every data point that's the biggest in some interval around itself. Wider intervals will ignore subsequent peaks and smaller intervals will get most local maximums, even ones that are next to bigger local maximums.              
-                </div>
-                <h3 style="margin-top: 2em" style="justify-content: center">Click to see how interval width can affect the number of peaks</h3>
-                <div id="interval-selector">
-                    <label>
-                        <input type="radio" name="interval" value="wide" checked>
-                        Wide Interval
-                    </label>
-                    <label>
-                        <input type="radio" name="interval" value="narrow">
-                        Narrow Interval
-                    </label>
-                </div>
+        <div id="example-side-explanation">
+            <div id="example-explanation-text">
+                You simply take every data point that's the biggest in some interval around itself. Wider intervals will ignore subsequent peaks and smaller intervals will get most local maximums, even ones that are next to bigger local maximums.              
             </div>
-            <div class="plot-container">
-                <svg id="peak-counting-example"></svg>
+            <h3 style="margin-top: 2em">Click to see how interval width can affect the number of peaks</h3>
+            <div id="interval-selector">
+                <label>
+                    <input type="radio" name="interval" value="wide" checked>
+                    Wide Interval
+                </label>
+                <label>
+                    <input type="radio" name="interval" value="narrow">
+                    Narrow Interval
+                </label>
             </div>
         </div>
+        <div class="plot-container">
+            <svg id="peak-counting-example"></svg>
+        </div>
+
         <h3>To find the peaks in our similarity scores, we use the most natural interval width: one the same length as our step pattern width (1 second). This is the result:</h3>
-        <div class="plots-wrapper">
-            <div class="plot-container">
-                <svg id="peak-counting-real"></svg>
-            </div>
+        <div class="plot-container">
+            <svg id="peak-counting-real"></svg>
         </div>
         <h3>These peaks in similarity correspond to the following 10 steps:</h3>
-        <div class="plots-wrapper">
-            <div class="plot-container">
-                <svg id="acc-data-with-steps"></svg>
-            </div>
+        <div class="plot-container">
+            <svg id="acc-data-with-steps"></svg>
         </div>
-        Notice how the end of one step generally lines up with the beginning of the next step! This is exactly what we want, since walking is cyclic and steps are discrete.
+        <p>Notice how the end of one step generally lines up with the beginning of the next step! This is exactly what we want, since walking is cyclic and steps are discrete.</p>
         <h2>And we're done! The algorithm found 10 peaks, so we have 10 steps! We've successfully counted the number of steps!</h2>
+    </section>
+
+    <!-- Section 7: Conclusion and Feedback -->
+    <section id="conclusion" class="section">
+        <h1>Now you know how computers count steps!</h1>
+        <p>We hope you enjoyed learning about how your phone's step counter works. The process involves:</p>
+        <ol style="text-align: left; max-width: 800px; margin: 0 auto 2rem auto;">
+            <li>Collecting accelerometer data from your phone's sensors</li>
+            <li>Comparing this data to a known step pattern template</li>
+            <li>Calculating similarity scores at each timestamp</li>
+            <li>Finding peaks in the similarity scores</li>
+            <li>Counting these peaks to determine the number of steps</li>
+        </ol>
+        <p>We welcome your feedback! If you have any questions or comments about this visualization, please feel free to reach out.</p>
+        <p>Thank you for exploring this interactive explanation with us!</p>
     </section>
 
     <script type="module" src="main.js"></script>
@@ -154,14 +168,47 @@
         import WalkingMan from './man.js';
         
         // Initialize the walking man animation
-        const walkingMan = new WalkingMan('walking-man-container', {
-            fps: 8,
-            showControls: true,
-            // Let the class calculate the frame width automatically
-            // based on the sprite sheet dimensions
-        });
+        let walkingMan;
         
-        walkingMan.play();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize the walking man animation
+            walkingMan = new WalkingMan('walking-man-container', {
+                fps: 8,
+                showControls: true,
+                // Let the class calculate the frame width automatically
+                // based on the sprite sheet dimensions
+            });
+            
+            walkingMan.play();
+            
+            // Add a basic intersection observer for the walking man section
+            const walkingSection = document.getElementById('visual-recognition');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && walkingMan && !walkingMan.isPlaying) {
+                        walkingMan.play();
+                        const playPauseBtn = document.querySelector('.sprite-controls button');
+                        if (playPauseBtn) {
+                            playPauseBtn.textContent = 'Pause';
+                        }
+                    }
+                });
+            }, { 
+                threshold: 0.3
+            });
+            
+            if (walkingSection) {
+                observer.observe(walkingSection);
+            }
+            
+            // Make note container collapsible with simple click
+            const noteContainer = document.querySelector('.note-container');
+            if (noteContainer) {
+                noteContainer.addEventListener('click', function() {
+                    this.classList.toggle('expanded');
+                });
+            }
+        });
         
         // Theme selector functionality
         const themeSelect = document.getElementById('theme-select');
@@ -227,13 +274,16 @@
         // Initialize theme
         setInitialTheme();
         
-        // Smooth scrolling for navigation
+        // Use simple, native smooth scrolling
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
                 e.preventDefault();
-                document.querySelector(this.getAttribute('href')).scrollIntoView({
-                    behavior: 'smooth'
-                });
+                const targetElement = document.querySelector(this.getAttribute('href'));
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
             });
         });
     </script>

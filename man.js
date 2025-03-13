@@ -62,7 +62,7 @@ class WalkingMan {
         
         // Play/Pause button
         const playPauseBtn = document.createElement('button');
-        playPauseBtn.textContent = this.isPlaying ? 'Pause' : 'Play';
+        playPauseBtn.textContent = 'Pause';
         playPauseBtn.onclick = () => {
             if (this.isPlaying) {
                 this.pause();
