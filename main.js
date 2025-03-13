@@ -327,7 +327,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         paramsvg.append("path")
             .datum(sim_scores)
             .attr("fill", "none")
-            .attr("stroke", "green")
+            .attr("stroke", "orange")
             .attr("stroke-width", 2)
             .attr("d", simLine);
 
@@ -588,7 +588,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .attr("y", margin.top / 2 + 30)
             .attr("text-anchor", "middle")
             .style("font-size", "24px")
-            .style("fill", "currentColor")
+            .style("fill", "orange")
             .style("font-family", "sans-serif")
             .text("Overall Similarity: 0.417");
         sim_calc_top_right_svg.append("text")
@@ -667,7 +667,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .attr("y", margin.top / 2 + 30)
             .attr("text-anchor", "middle")
             .style("font-size", "24px")
-            .style("fill", "currentColor")
+            .style("fill", "orange")
             .style("font-family", "sans-serif")
             .text("Overall Similarity: -0.417");
         sim_calc_bottom_right_svg.append("text")
@@ -930,7 +930,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         peak_count_real_svg.append("path")
             .datum(sim_scores)
             .attr("fill", "none")
-            .attr("stroke", "var(--plot-line-color-1)")
+            .attr("stroke", "orange")
             .attr("stroke-width", 2)
             .attr("d", peakLineReal);
 
