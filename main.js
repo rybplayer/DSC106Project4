@@ -367,7 +367,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             } else {
                 hoverCircle.style("visibility", "hidden");
             }
-        }, 100)); // Reasonable throttle time
+        }, 0)); // Reasonable throttle time
 
         // Hide the hover circle when mouse/touch leaves
         paramsvg.on("mouseleave touchend", function() {
