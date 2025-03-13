@@ -353,7 +353,7 @@ svg#peak-counting-real {
     }
     
     .integral-symbol {
-        font-size: 36pt;
+        font-size: 24pt;
     }
     
     h1 {
@@ -551,13 +551,13 @@ a:active {
 .integral-symbol {
     font-size: 48pt;
     display: inline-flex;
-    align-items: center;
+    align-items: bottom;
     justify-content: center;
     vertical-align: middle;
     line-height: 0.8;
     margin: 0 5px;
     position: relative;
-    top: 10px;
+    top: -10px;
 }
 
 #conclusion ol {

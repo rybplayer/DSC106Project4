@@ -215,10 +215,10 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         .attr("x", (width / 2))             
         .attr("y", margin.top / 2)
         .attr("text-anchor", "middle")  
-        .style("font-size", "24px") 
+        .style("font-size", "20px") 
         .style("fill", "var(--text-color)")
         .style("font-family", "sans-serif")
-        .text("Similarity Between Step Template");
+        .text("Similarity between step template and data");
 
     paramsvg.append("text")
         .attr("x", (width / 2))             
@@ -227,7 +227,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         .style("font-size", "24px") 
         .style("fill", "var(--text-color)")
         .style("font-family", "sans-serif")
-        .text("and Real Accelerometer Data at Each Time");
+        .text("Hover over the plot to see the template overlay!");
 
     paramsvg.append("text")
         .attr("transform", `translate(0,${height - margin.bottom})`)
@@ -287,20 +287,23 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .attr("transform", `translate(${margin.left},0)`)
             .call(d3.axisLeft(templateY).ticks(5));
 
-        // Add axis labels
+        // Add axis labels - repositioned to match the first plot
         template_svg.append("text")
-            .attr("transform", `translate(${400/2},${400 - margin.bottom/3})`)
-            .style("text-anchor", "middle")
-            .style("fill", "var(--text-color)")
-            .style("font-size", "12px")
+            .attr("x", margin.left + 350)
+            .attr("y", height - margin.bottom - 10)
+            .attr("fill", "var(--text-color)")
+            .attr("text-anchor", "end")
+            .style("font-size", "12px")  
             .text("Time (Seconds)");
             
-        // Add y-axis label
+        // Add y-axis label - repositioned to match the first plot
         template_svg.append("text")
-            .attr("transform", `translate(${margin.left/3},${(400 - margin.top - margin.bottom)/2 + margin.top}) rotate(-90)`)
-            .style("text-anchor", "middle")
-            .style("fill", "var(--text-color)")
+            .attr("x", 50)
+            .attr("y", margin.top)
+            .attr("fill", "var(--text-color)")
+            .attr("text-anchor", "start")
             .style("font-size", "12px")
+            .attr("text-anchor", "start")
             .text("Acceleration Magnitude (g)");
 
         // Plot the template
@@ -434,6 +437,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 .attr("x", width / 2)
                 .attr("y", margin.top + 20)
                 .attr("text-anchor", "middle")
+                .style("font-size", "30px")
                 .style("fill", "var(--text-color)");
 
             paramsvg.selectAll(".tau-sigma-circle-outlined").remove();
@@ -464,6 +468,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 .attr("x", width / 2)
                 .attr("y", margin.top + 20)
                 .attr("text-anchor", "middle")
+                // .style("font-size", "12px")
                 .style("fill", "var(--text-color)");
 
             paramsvg.selectAll(".tau-sigma-circle-outlined").remove();
@@ -1024,7 +1029,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             .style("font-size", "24px")
             .style("fill", "currentColor")
             .style("font-family", "sans-serif")
-            .text("Peak Counting: Real Data");
+            .text("Peak Counting: Hover for more details!");
 
         peak_count_real_svg.append("text")
             .attr("transform", `translate(0,${height - margin.bottom})`)

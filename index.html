@@ -29,32 +29,31 @@
 
     <!-- Section 2: Visual Recognition -->
     <section id="visual-recognition" class="section">
-        <h1>If you saw a person walking, <br> you could probably count their steps.</h1>
+        <h1>If you saw a person walking, <br> you could <i>visually</i> count their steps.</h1>
         <div id="walking-man-container" class="sprite-container"></div>
     </section>
 
     <!-- Section 3: Computer Approach -->
     <section id="computer-approach" class="section">
         <h1>But how does a computer count steps?</h1>
-        <p>One idea is measuring movement and finding its magnitude.</p>
+        <p>One idea is measuring movement as directionless acceleration, or acceleration magnitude.</p>
         <div class="plot-container">
             <svg id="basic-functionplot"></svg>
         </div>
-        <p>Then, you compare this acceleration magnitude data to a pattern:</p>
+        <p>Researchers found that this shape is what a step looks like in acceleration magnitude:</p>
         <div class="plot-container">
             <svg id="template"></svg>
         </div>
-        <p>Researchers found that this shape is what a step looks like accelerometer data.</p>
-        <p>Once you have your acceleration magnitude data, as well as this pattern, you can simply find the similarity between this pattern and your data at each possible timestamp. Timestamps with high similarity are likely where someone's step started. By counting the number of timestamps with high similarity, we can count the number of steps!</p>
+        <p>Then, counting steps becomes a <i>similarity problem</i>. That is, at what timestamps does the data most closely match the step pattern?</p>
     </section>
     
     <!-- Section 4: Similarity Calculation -->
      <section id="similarity-calculation" class="section">
-        <h1>How is similarity calculated?</h1>
-        <h2>We simply take the two functions, multiply them, and integrate the result!</h2>
+        <h1>So, how is similarity calculated?</h1>
+        <h2>Take the graphs, multiply them, and find the area under the result:</h2>
         <h2><span style="color: green">Green</span> = <span style="color: var(--plot-line-color-2)">Red</span> &sdot; <span style="color: var(--plot-line-color-1)">Blue</span></h2>
         <h2><span style="color: orange">Similarity</span> = <span class="integral-symbol">&int;</span> <span style="color: green">Green</span></h2>
-        <h3>Example #1: A close match!</h3>
+        <p>Example #1: A close match!</p>
         <div class="plots-wrapper">
             <div class="plot-container">
                 <svg id="sim-calc-top-left"></svg>
@@ -63,7 +62,7 @@
                 <svg id="sim-calc-top-right"></svg>
             </div>
         </div>
-        <h3>Example #2: Not a close match at all!</h3>
+        <p>Example #2: Not a close match at all!</p>
         <div class="plots-wrapper">
             <div class="plot-container">
                 <svg id="sim-calc-bottom-left"></svg>
@@ -72,15 +71,13 @@
                 <svg id="sim-calc-bottom-right"></svg>
             </div>
         </div>
-        <h3>Our data is piecewise linear just like these functions, we just have way more points.</h3>
+        <p>Our data is just like these graphs, just more complex!</p>
      </section>
 
     <!-- Section 5: CWT Transform -->
     <section id="cwt-transform" class="section">
         <h1>Finding timestamps with high similarity</h1>
-        <p>At each timestamp, you find the similarity between the data and a step pattern beginning at that timestamp.</p>
-        
-        <h2>This is a graph of the similarity at each timestamp, as well as the translated pattern that we're comparing to the accelerometer data</h2>
+        <p>At each timestamp, let's find the similarity between the data and a step pattern. <br> On the left is the similarity plot, and on the right is our data:</p>
         <div class="plots-wrapper">
             <div class="plot-container">
                 <svg id="parameterplot"></svg>
@@ -113,14 +110,16 @@
 
     <!--Section 6: Counting Peaks-->
     <section id="counting-peaks" class="section">
-        <h1>Now we just count the number of peaks in the similarity scores</h1>
-        <h2>How exactly? Here's one easy way.</h2>
+        <h1>So, how can we count the number of steps?</h1>
 
         <div id="example-side-explanation">
-            <div id="example-explanation-text">
-                You simply take every data point that's the biggest in some interval around itself. Wider intervals will ignore subsequent peaks and smaller intervals will get most local maximums, even ones that are next to bigger local maximums.              
-            </div>
-            <h3 style="margin-top: 2em">Click to see how interval width can affect the number of peaks</h3>
+            <p>
+                A peak occurs in the similarity plot when the similarity is high - that is, when a step occurs! So our similiarity problem becomes a peak counting problem.
+            </p>
+
+            <p>
+                Here's an easy way to count peaks: Take the biggest data point in some interval around itself. Wider intervals ignore subsequent peaks and smallest ones capture even local minimums:             
+            </p>
             <div id="interval-selector">
                 <label>
                     <input type="radio" name="interval" value="wide" checked>
@@ -136,7 +135,7 @@
             <svg id="peak-counting-example"></svg>
         </div>
 
-        <h3>To find the peaks in our similarity scores, we use the most natural interval width: one the same length as our step pattern width (1 second). This is the result:</h3>
+        <h3>To find the peaks in our similarity plot, we use our step pattern width (1 second). Here's the result:</h3>
         <div class="plot-container">
             <svg id="peak-counting-real"></svg>
         </div>
@@ -144,23 +143,27 @@
         <div class="plot-container">
             <svg id="acc-data-with-steps"></svg>
         </div>
-        <p>Notice how the end of one step generally lines up with the beginning of the next step! This is exactly what we want, since walking is cyclic and steps are discrete.</p>
-        <h2>And we're done! The algorithm found 10 peaks, so we have 10 steps! We've successfully counted the number of steps!</h2>
+        <p>Notice how the end of one step generally lines up with the beginning of the next step! <br> This is exactly what we want, since walking is cyclic and steps are discrete.</p>
+        <h1>And we're done! There are 10 peaks, so we have 10 steps! <br> We've successfully counted the number of steps!</h1>
     </section>
 
     <!-- Section 7: Conclusion and Feedback -->
     <section id="conclusion" class="section">
-        <h1>Now you know how computers count steps!</h1>
-        <p>We hope you enjoyed learning about how your phone's step counter works. The process involves:</p>
+        <h1>Now you know a little about how computers count steps!</h1>
+        <p>We hope you enjoyed learning about how your phone counts steps! Here's a quick summary:</p>
         <ol style="text-align: left; max-width: 800px; margin: 0 auto 2rem auto;">
-            <li>Collecting accelerometer data from your phone's sensors</li>
-            <li>Comparing this data to a known step pattern template</li>
-            <li>Calculating similarity scores at each timestamp</li>
-            <li>Finding peaks in the similarity scores</li>
-            <li>Counting these peaks to determine the number of steps</li>
+            <li>Acceleration magnitude is collected by sensors.</li>
+            <li>Similarity scores are calculated with a step template.</li>
+            <li>Peaks are found in the similarity scores.</li>
+            <li>Count peaks in the similarity scores to get the number of steps!</li>
         </ol>
-        <p>We welcome your feedback! If you have any questions or comments about this visualization, please feel free to reach out.</p>
-        <p>Thank you for exploring this interactive explanation with us!</p>
+        <p>To learn more, see our writeup, data, and the original paper:</p>
+        <h3> <a href="https://docs.google.com/document/d/1xJ1Rywjtpx7pNN0VqV02o82idn6ey_pL3LhCW_lVaDs/edit?usp=sharing">Link to writeup</a></h3>
+        <h3><a href="https://physionet.org/content/minute-level-step-count-nhanes/1.0.0/">Link to physionet data</a></h3>
+        <h3><a href="https://doi.org/10.1093/biostatistics/kxz033">Link to original paper</a></h3>
+
+        <p>We welcome your feedback! <br> If you have any questions or comments about this visualization, please feel free to reach out.</p>
+        <p>Thank you for exploring this interactive visualization with us!</p>
     </section>
 
     <script type="module" src="main.js"></script>
