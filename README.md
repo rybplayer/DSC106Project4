@@ -1,3 +1,5 @@
+![Banner](https://github.com/rybplayer/DSC106Project4/blob/main/model/thumbnail.png)
+
 ![Banner](https://github.com/rybplayer/DSC106Project4/blob/main/model/ProjectBanner.png)
 
 # How does a phone 📱 count your steps? 🚶‍➡️🚶‍♀️‍➡️
