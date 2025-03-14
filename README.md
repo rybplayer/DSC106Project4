@@ -14,7 +14,7 @@ Names:
 **[Link to Write-Up](https://docs.google.com/document/d/1dcNWIovDCFFSPvu0TG_53hivtJetcSnDsji9FEgcgK4/edit?usp=sharing)**
 
 ## Tabel of Contents
-- [The Data Science Story: Does BPM Predict Exam Scores?](#the-data-science-story-does-bpm-predict-exam-scores)
+- [How does a phone 📱 count your steps? 🚶‍➡️🚶‍♀️‍➡️](#how-does-a-phone--count-your-steps-️️️)
     - [Table of Contents](#tabel-of-contents)
 
 Sprite sheets from https://ordinary-bumblebee.itch.io/8-direction-walk-cycle
