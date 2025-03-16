@@ -575,3 +575,7 @@ a:active {
         padding-left: 2rem;
     }
 }
+
+.plots-wrapper h3 {
+    margin-top: 10em;
+}

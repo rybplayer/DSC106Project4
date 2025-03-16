@@ -265,6 +265,8 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
         let stride_temp_pwl = new PiecewiseLinear(Array.from({length: strideTemplate.length}, (_, i) => i), strideTemplate);
 
+        
+
         // Create scales for the template plot
         const templateX = d3.scaleLinear()
             .domain([0, strideTemplate.length - 1])
@@ -1024,12 +1026,12 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
         peak_count_real_svg.append("text")
             .attr("x", (width / 2))
-            .attr("y", margin.top / 2 + 50)
+            .attr("y", margin.top / 2 + 30)
             .attr("text-anchor", "middle")
             .style("font-size", "24px")
             .style("fill", "currentColor")
             .style("font-family", "sans-serif")
-            .text("Peak Counting: Hover for more details!");
+            .text("Peak Counting: Hover to see the corresponding step!");
 
         peak_count_real_svg.append("text")
             .attr("transform", `translate(0,${height - margin.bottom})`)

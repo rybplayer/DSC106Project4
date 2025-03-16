@@ -40,6 +40,11 @@
         <div class="plot-container">
             <svg id="basic-functionplot"></svg>
         </div>
+        <p>The problem is, we have no idea what a step looks like in acceleration data. What we need is some acceleration data with steps that have been identified manually.</p>
+        <p>Once we have this, we can find the "shape" of a normal step. Here's what that process might look like:</p>
+        <div id="overlay-svg-container">
+
+        </div>
         <p>Researchers found that this shape is what a step looks like in acceleration magnitude:</p>
         <div class="plot-container">
             <svg id="template"></svg>
@@ -136,13 +141,16 @@
         </div>
 
         <h3>To find the peaks in our similarity plot, we use our step pattern width (1 second). Here's the result:</h3>
-        <div class="plot-container">
-            <svg id="peak-counting-real"></svg>
+        <div class="plots-wrapper">
+            <div class="plot-container">
+                <svg id="peak-counting-real"></svg>
+            </div>
+            <h3>These peaks in similarity correspond to the following 10 steps:</h3>
+            <div class="plot-container">
+                <svg id="acc-data-with-steps"></svg>
+            </div>            
         </div>
-        <h3>These peaks in similarity correspond to the following 10 steps:</h3>
-        <div class="plot-container">
-            <svg id="acc-data-with-steps"></svg>
-        </div>
+
         <p>Notice how the end of one step generally lines up with the beginning of the next step! <br> This is exactly what we want, since walking is cyclic and steps are discrete.</p>
         <h1>And we're done! There are 10 peaks, so we have 10 steps! <br> We've successfully counted the number of steps!</h1>
     </section>
