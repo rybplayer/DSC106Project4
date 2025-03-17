@@ -15,6 +15,8 @@ const peak_count_real_svg = d3.select("#peak-counting-real");
 const acc_data_with_steps = d3.select("#acc-data-with-steps");
 const template_svg = d3.select("svg#template")
 
+let scrollTriggered = false;
+
 let current_stride_temp = null;
 const SECONDS_TO_PLOT = 10;
 
@@ -128,6 +130,7 @@ function createBasicAccelerationPlot(data) {
         .attr("stroke-width", 2)
         .attr("d", line);
 }
+
 
 d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
     let values = data.trim().split("\n").map(Number);
@@ -265,7 +268,190 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
         let stride_temp_pwl = new PiecewiseLinear(Array.from({length: strideTemplate.length}, (_, i) => i), strideTemplate);
 
+        const NUM_OVERLAYS = 5;
+        const overlaysContainer = d3.select("#overlay-svg-container")
+        let overlayAv = Array(strideTemplateReshaped.length).fill(0);
+        let overlaysvgs = []
+        const containerWidth = overlaysContainer.node().getBoundingClientRect().width;
+
+        for (let i = 0; i < NUM_OVERLAYS; i++) {
+            
+            overlaysContainer.append("svg")
+                .attr("class", "overlay-svg")
+                .attr("id", `overlay-${i}`)
+                .attr("width", containerWidth / NUM_OVERLAYS)
+                .attr("height", 400)
+                .style("display", "inline-block");
+            let strideTemplateReshapedCopy = [...strideTemplateReshaped];
+            strideTemplateReshapedCopy = strideTemplateReshapedCopy.map((d, i, arr) => 
+                (i === 0 || i === arr.length - 1) ? d : d + (Math.random() - 0.5) * 0.2
+            );
+            overlayAv = overlayAv.map((d, i) => d + strideTemplateReshapedCopy[i]);
+
+            const thisX = d3.scaleLinear()
+                .domain([0, strideTemplate.length - 1])
+                .range([0, containerWidth / NUM_OVERLAYS]);
+
+            const thisY = d3.scaleLinear()
+                .domain([d3.min(strideTemplateReshaped) * 0.9, d3.max(strideTemplateReshaped) * 1.1])
+                .range([containerWidth / NUM_OVERLAYS, margin.top]);
+
+            const copyLine = d3.line()
+                .x((d, i) => thisX(i))
+                .y(d => thisY(d));
+
+            let this_svg = d3.select(`#overlay-${i}`)
+            overlaysvgs.push(this_svg);
+
+            this_svg.append("path")
+                .datum(strideTemplateReshapedCopy)
+                .attr("fill", "none")
+                .attr("stroke", "purple")
+                .attr("stroke-width", 2)
+                .attr("class", "labeled-data")
+                .attr("d", copyLine);
+        }
+
+        overlayAv = overlayAv.map((d) => d/NUM_OVERLAYS);
+        const middleOverlay = overlaysvgs[Math.floor(overlaysvgs.length / 2)];
+        const middleOverlayRect = middleOverlay.node().getBoundingClientRect();
+        const middleOverlayX = middleOverlayRect.x + middleOverlayRect.width / 2;
+        const targetX = middleOverlayX;
+        let deltas = [];
+        let initials = [];
+
+        overlaysvgs.forEach((svg) => {
+            initials.push(svg.node().getBoundingClientRect().x + svg.node().getBoundingClientRect().width / 2);
+            deltas.push(targetX - (svg.node().getBoundingClientRect().x + svg.node().getBoundingClientRect().width / 2));
+        })
+
+        let scrollCounter = 0;
+        let scrollFrozen = false;
         
+        window.addEventListener('scroll', () => {
+          const rect = overlaysContainer.node().getBoundingClientRect();
+          const scrollTriggerPoint = rect.y - window.scrollY;
+        
+          if (!scrollFrozen && scrollTriggerPoint < -1800 && !scrollTriggered) {
+            scrollFrozen = true; 
+            document.body.style.overflow = 'hidden';
+        
+            const scrollToY = rect.y + window.scrollY - (window.innerHeight / 2) + (rect.height / 2);
+            window.scrollTo({
+              top: scrollToY,
+              behavior: 'smooth'
+            });
+        
+            // Enable wheel event to track scroll attempts
+            window.addEventListener('wheel', handleWheel, { passive: false }); // passive: false lets you prevent default if needed
+          }
+        });
+        
+        function handleWheel(event) {
+            event.preventDefault(); // Stop actual scroll (precaution)
+        
+            // event.deltaY > 0 => scroll down, < 0 => scroll up
+            if (event.deltaY > 0) {
+                scrollCounter++;
+            } else if (event.deltaY < 0) {
+                if (scrollCounter > 0) {
+                    scrollCounter--;
+                }
+            }
+        
+        
+            // Example: after 10 scrolls, unlock scroll
+            const SCROLLNUM = 200
+            if (scrollCounter > SCROLLNUM) {
+                document.body.style.overflow = 'auto';
+                window.removeEventListener('wheel', handleWheel);
+                scrollFrozen = false;
+                scrollCounter = SCROLLNUM;
+                scrollTriggered = true;
+            }
+
+            let progress = scrollCounter/SCROLLNUM;
+            console.log(progress);
+
+            const NUM_SECTIONS = 5;
+
+            const overlayTextContainer = document.getElementById("overlay-text-container");
+
+            if (progress <= 1 / NUM_SECTIONS) {
+                if (progress <= 1 / 2 / NUM_SECTIONS) {
+                    overlayTextContainer.textContent = "First, we start with data from a controlled scientific experiment.";
+                    overlayTextContainer.style.opacity = 1 -  (progress) * NUM_SECTIONS;
+                }
+                if (progress > 1 / 2 / NUM_SECTIONS) {
+                    overlayTextContainer.textContent = "Then we mark the starts and ends of each step manually.";
+                    overlayTextContainer.style.opacity = 2 * (progress - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS;
+                }
+                overlaysvgs.forEach(svg => {
+                    svg.selectAll(".line-dividers").remove();
+                    svg.append("line")
+                        .attr("x1", svg.node().getBoundingClientRect().width - 1)
+                        .attr("x2", svg.node().getBoundingClientRect().width - 1)
+                        .attr("y1", 0)
+                        .attr("y2", 200)
+                        .attr("stroke", "red")
+                        .attr("stroke-width", 2)
+                        .attr("opacity", progress * NUM_SECTIONS)
+                        .attr("class", "line-dividers");
+                });
+            } else if (progress > 1/NUM_SECTIONS && progress <= 2 / NUM_SECTIONS) {
+                if (progress - 1/NUM_SECTIONS <= 1 / 2 / NUM_SECTIONS) {
+                    overlayTextContainer.textContent = "Then we mark the starts and ends of each step manually.";
+                    overlayTextContainer.style.opacity = 1 -  (progress - 1/NUM_SECTIONS ) * NUM_SECTIONS;
+                }
+                if (progress - 1/NUM_SECTIONS  > 1 / 2 / NUM_SECTIONS) {
+                    overlayTextContainer.textContent = "Then we overlay all the steps. The corresponding points get lined up.";
+                    overlayTextContainer.style.opacity = 2 * (progress - 1/NUM_SECTIONS  - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS;
+                }
+            } else if (progress > 2 / NUM_SECTIONS && progress <= 3/NUM_SECTIONS) {
+                overlaysvgs.forEach((svg, index) => {
+                    let deltaX = deltas[index];
+                    svg.attr("transform", `translate(${deltaX * (progress - 2/NUM_SECTIONS) * NUM_SECTIONS}, 0)`);
+                    svg.selectAll(".line-dividers").attr("opacity", 1 - (progress - 2/NUM_SECTIONS)*NUM_SECTIONS);
+                });
+            } else if (progress > 3 / NUM_SECTIONS && progress <= 4/NUM_SECTIONS) {
+                if (progress - 3/NUM_SECTIONS <= 1 / 2 / NUM_SECTIONS) {
+                    overlayTextContainer.textContent = "Then we overlay all the steps. The corresponding points get lined up.";
+                    overlayTextContainer.style.opacity = 1 -  (progress - 3/NUM_SECTIONS ) * NUM_SECTIONS;
+                }
+                if (progress - 3/NUM_SECTIONS  > 1 / 2 / NUM_SECTIONS) {
+                    overlayTextContainer.textContent = "Then we average out all the data from corresponding points.";
+                    overlayTextContainer.style.opacity = 2 * (progress - 3/NUM_SECTIONS  - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS;
+                }
+            } else if (progress > 4 / NUM_SECTIONS && progress <= 1){
+                overlaysvgs.forEach((svg, index) => {
+                    svg.select(".labeled-data").attr("opacity", 1 - (progress - 4/NUM_SECTIONS) * NUM_SECTIONS);
+                })
+                
+                const overlayX = d3.scaleLinear()
+                    .domain([0, overlayAv.length - 1])
+                    .range([0, containerWidth / NUM_OVERLAYS]);
+
+                const overlayY = d3.scaleLinear()
+                    .domain([d3.min(overlayAv) * 0.9, d3.max(overlayAv) * 1.1])
+                    .range([containerWidth/NUM_OVERLAYS, margin.top]);
+
+                const overlayLine = d3.line()
+                    .x((d, i) => overlayX(i))
+                    .y(d => overlayY(d));
+
+                middleOverlay.append("path")
+                    .datum(overlayAv)
+                    .attr("fill", "none")
+                    .attr("stroke", "var(--plot-line-color-2)")
+                    .attr("stroke-width", 2)
+                    .attr("opacity", (progress - 4/NUM_SECTIONS) *NUM_SECTIONS)
+                    .attr("d", overlayLine);
+            }
+
+        }
+        
+        
+
 
         // Create scales for the template plot
         const templateX = d3.scaleLinear()
@@ -404,8 +590,6 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 peak_indices.push(i);
             }
         }
-        console.log(peak_indices);
-
         // Plot similarity scores
         const simLine = d3.line()
             .x((d, i) => paramX_seconds(i))

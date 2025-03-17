@@ -579,3 +579,20 @@ a:active {
 .plots-wrapper h3 {
     margin-top: 10em;
 }
+
+div#overlay-container {
+    display: flex;
+    flex-direction: row;
+    margin: 0;
+
+    #overlay-text-container {
+        flex: 1;
+        font-size: 36pt;
+    }
+
+    #overlay-svg-container {
+        flex: 2;
+        margin: 0em;
+    }
+}
+
