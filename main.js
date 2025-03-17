@@ -328,23 +328,85 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         let scrollCounter = 0;
         let scrollFrozen = false;
         
-        window.addEventListener('scroll', () => {
-          const rect = overlaysContainer.node().getBoundingClientRect();
-          const scrollTriggerPoint = rect.y - window.scrollY;
-        
-          if (!scrollFrozen && scrollTriggerPoint < -1800 && !scrollTriggered) {
-            scrollFrozen = true; 
-            document.body.style.overflow = 'hidden';
-        
-            const scrollToY = rect.y + window.scrollY - (window.innerHeight / 2) + (rect.height / 2);
-            window.scrollTo({
-              top: scrollToY,
-              behavior: 'smooth'
-            });
-        
-            // Enable wheel event to track scroll attempts
-            window.addEventListener('wheel', handleWheel, { passive: false }); // passive: false lets you prevent default if needed
+        // Function to check if scrollytelling should start
+        function checkScrollTrigger() {
+          const viewportHeight = window.innerHeight;
+          const sectionElement = document.getElementById("finding-template");
+          const scrollIndicator = document.getElementById('scroll-indicator');
+          const textContainer = document.getElementById("overlay-text-container");
+          
+          // If any of these elements don't exist, we can't proceed
+          if (!sectionElement || !scrollIndicator || !overlaysContainer.node() || !textContainer) {
+            return;
           }
+          
+          const sectionRect = sectionElement.getBoundingClientRect();
+          const scrollIndicatorRect = scrollIndicator.getBoundingClientRect();
+          const textContainerRect = textContainer.getBoundingClientRect();
+          
+          // Determine if section fits in viewport
+          const sectionFitsInViewport = sectionRect.height <= viewportHeight * 0.9;
+          
+          // Calculate vertical center positions
+          const sectionCenter = sectionRect.top + sectionRect.height / 2;
+          const viewportCenter = viewportHeight / 2;
+          const isCentered = Math.abs(sectionCenter - viewportCenter) < 50;
+          
+          // For large screens where section fits: ensure section is centered
+          // For small screens where section doesn't fit: ensure text and scroll indicator are visible
+          let shouldStartScrollytelling = false;
+          
+          if (sectionFitsInViewport) {
+            // Large screen mode: section must be centered
+            shouldStartScrollytelling = isCentered;
+            console.log("Large screen mode, centered:", isCentered);
+          } else {
+            // Small screen mode: text and scroll indicator must be visible with bottom padding
+            const bottomPadding = 100; // 100px padding from bottom of screen
+            shouldStartScrollytelling = 
+              textContainerRect.top >= 0 && 
+              scrollIndicatorRect.top >= 0 && 
+              scrollIndicatorRect.bottom <= viewportHeight - bottomPadding;
+            console.log("Small screen mode, text and indicator visible with padding:", shouldStartScrollytelling);
+          }
+          
+          if (!scrollFrozen && !scrollTriggered && shouldStartScrollytelling) {
+            scrollFrozen = true;
+            
+            // Don't change the scroll position at all - just freeze it where it is
+            document.body.style.overflow = 'hidden';
+            
+            // Enable wheel event to track scroll attempts
+            window.addEventListener('wheel', handleWheel, { passive: false });
+            
+            // Show scroll indicator
+            if (scrollIndicator) {
+              scrollIndicator.classList.add('visible');
+            }
+            
+            console.log("Scrollytelling started", sectionFitsInViewport ? "large screen mode" : "small screen mode");
+          }
+        }
+        
+        // Check on scroll
+        window.addEventListener('scroll', checkScrollTrigger);
+        
+        // Also check when the page loads or after a short delay
+        setTimeout(checkScrollTrigger, 500);
+        
+        // Check when window is resized
+        let resizeTimeout;
+        window.addEventListener('resize', function() {
+            // Debounce resize events
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(function() {
+                // If scrollytelling is active and window size changes significantly,
+                // we might need to adjust the position
+                if (scrollFrozen && !scrollTriggered) {
+                    // For now, just check if we should continue with scrollytelling
+                    checkScrollTrigger();
+                }
+            }, 250);
         });
         
         function handleWheel(event) {
@@ -356,18 +418,34 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             } else if (event.deltaY < 0) {
                 if (scrollCounter > 0) {
                     scrollCounter--;
+                } else {
+                    // Allow exiting the scrollytelling when trying to scroll up at the beginning
+                    document.body.style.overflow = 'auto';
+                    window.removeEventListener('wheel', handleWheel);
+                    scrollFrozen = false;
+                    
+                    // Hide scroll indicator
+                    const scrollIndicator = document.getElementById('scroll-indicator');
+                    if (scrollIndicator) {
+                      scrollIndicator.classList.remove('visible');
+                    }
+                    return;
                 }
             }
         
-        
-            // Example: after 10 scrolls, unlock scroll
-            const SCROLLNUM = 200
+            const SCROLLNUM = 200;
             if (scrollCounter > SCROLLNUM) {
                 document.body.style.overflow = 'auto';
                 window.removeEventListener('wheel', handleWheel);
                 scrollFrozen = false;
                 scrollCounter = SCROLLNUM;
                 scrollTriggered = true;
+                
+                // Hide scroll indicator
+                const scrollIndicator = document.getElementById('scroll-indicator');
+                if (scrollIndicator) {
+                  scrollIndicator.classList.remove('visible');
+                }
             }
 
             let progress = scrollCounter/SCROLLNUM;
@@ -376,15 +454,32 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             const NUM_SECTIONS = 5;
 
             const overlayTextContainer = document.getElementById("overlay-text-container");
+            
+            // Set a fixed height for the text container to prevent jumping
+            if (overlayTextContainer && !overlayTextContainer.style.minHeight) {
+                // Only set this once to avoid constant resizing
+                overlayTextContainer.style.minHeight = "3em";
+            }
+
+            // Create a function to update text with fade transition to prevent jumping
+            function updateTextWithFade(element, newText, opacity) {
+                // Don't change text if it's the same to avoid unnecessary reflows
+                if (element.textContent !== newText) {
+                    element.textContent = newText;
+                }
+                element.style.opacity = opacity;
+            }
 
             if (progress <= 1 / NUM_SECTIONS) {
                 if (progress <= 1 / 2 / NUM_SECTIONS) {
-                    overlayTextContainer.textContent = "First, we start with data from a controlled scientific experiment.";
-                    overlayTextContainer.style.opacity = 1 -  (progress) * NUM_SECTIONS;
+                    updateTextWithFade(overlayTextContainer, 
+                        "First, we start with data from a controlled scientific experiment.",
+                        1 - (progress) * NUM_SECTIONS);
                 }
                 if (progress > 1 / 2 / NUM_SECTIONS) {
-                    overlayTextContainer.textContent = "Then we mark the starts and ends of each step manually.";
-                    overlayTextContainer.style.opacity = 2 * (progress - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS;
+                    updateTextWithFade(overlayTextContainer,
+                        "Then we mark the starts and ends of each step manually.",
+                        2 * (progress - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS);
                 }
                 overlaysvgs.forEach(svg => {
                     svg.selectAll(".line-dividers").remove();
@@ -400,12 +495,14 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 });
             } else if (progress > 1/NUM_SECTIONS && progress <= 2 / NUM_SECTIONS) {
                 if (progress - 1/NUM_SECTIONS <= 1 / 2 / NUM_SECTIONS) {
-                    overlayTextContainer.textContent = "Then we mark the starts and ends of each step manually.";
-                    overlayTextContainer.style.opacity = 1 -  (progress - 1/NUM_SECTIONS ) * NUM_SECTIONS;
+                    updateTextWithFade(overlayTextContainer,
+                        "Then we mark the starts and ends of each step manually.",
+                        1 -  (progress - 1/NUM_SECTIONS ) * NUM_SECTIONS);
                 }
                 if (progress - 1/NUM_SECTIONS  > 1 / 2 / NUM_SECTIONS) {
-                    overlayTextContainer.textContent = "Then we overlay all the steps. The corresponding points get lined up.";
-                    overlayTextContainer.style.opacity = 2 * (progress - 1/NUM_SECTIONS  - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS;
+                    updateTextWithFade(overlayTextContainer,
+                        "Then we overlay all the steps. The corresponding points get lined up.",
+                        2 * (progress - 1/NUM_SECTIONS  - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS);
                 }
             } else if (progress > 2 / NUM_SECTIONS && progress <= 3/NUM_SECTIONS) {
                 overlaysvgs.forEach((svg, index) => {
@@ -415,12 +512,14 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 });
             } else if (progress > 3 / NUM_SECTIONS && progress <= 4/NUM_SECTIONS) {
                 if (progress - 3/NUM_SECTIONS <= 1 / 2 / NUM_SECTIONS) {
-                    overlayTextContainer.textContent = "Then we overlay all the steps. The corresponding points get lined up.";
-                    overlayTextContainer.style.opacity = 1 -  (progress - 3/NUM_SECTIONS ) * NUM_SECTIONS;
+                    updateTextWithFade(overlayTextContainer,
+                        "Then we overlay all the steps. The corresponding points get lined up.",
+                        1 -  (progress - 3/NUM_SECTIONS ) * NUM_SECTIONS);
                 }
                 if (progress - 3/NUM_SECTIONS  > 1 / 2 / NUM_SECTIONS) {
-                    overlayTextContainer.textContent = "Then we average out all the data from corresponding points.";
-                    overlayTextContainer.style.opacity = 2 * (progress - 3/NUM_SECTIONS  - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS;
+                    updateTextWithFade(overlayTextContainer,
+                        "Then we average out all the data from corresponding points.",
+                        2 * (progress - 3/NUM_SECTIONS  - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS);
                 }
             } else if (progress > 4 / NUM_SECTIONS && progress <= 1){
                 overlaysvgs.forEach((svg, index) => {
@@ -438,6 +537,17 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 const overlayLine = d3.line()
                     .x((d, i) => overlayX(i))
                     .y(d => overlayY(d));
+
+                if (progress - 4/NUM_SECTIONS <= 1 / 2 / NUM_SECTIONS) {
+                    updateTextWithFade(overlayTextContainer,
+                        "Then we average out all the data from corresponding points.",
+                        1 - (progress - 4/NUM_SECTIONS) * NUM_SECTIONS);
+                }
+                if (progress - 4/NUM_SECTIONS > 1 / 2 / NUM_SECTIONS) {
+                    updateTextWithFade(overlayTextContainer,
+                        "And we get a template for what a step looks like in acceleration data!",
+                        2 * (progress - 4/NUM_SECTIONS - 1 / NUM_SECTIONS / 2) * NUM_SECTIONS);
+                }
 
                 middleOverlay.append("path")
                     .datum(overlayAv)
