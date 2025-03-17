@@ -621,7 +621,7 @@ a:active {
     text-align: center;
     margin: 0 auto 20px auto;
     max-width: 800px;
-    transition: opacity 0.5s ease;
+    transition: opacity 0.1s ease-out;
     font-weight: normal;
 }
 

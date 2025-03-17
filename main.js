@@ -392,7 +392,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
         window.addEventListener('scroll', checkScrollTrigger);
         
         // Also check when the page loads or after a short delay
-        setTimeout(checkScrollTrigger, 500);
+        setTimeout(checkScrollTrigger, 0);
         
         // Check when window is resized
         let resizeTimeout;
@@ -433,7 +433,7 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
                 }
             }
         
-            const SCROLLNUM = 200;
+            const SCROLLNUM = 150;
             if (scrollCounter > SCROLLNUM) {
                 document.body.style.overflow = 'auto';
                 window.removeEventListener('wheel', handleWheel);
