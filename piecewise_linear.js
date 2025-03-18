@@ -106,6 +106,10 @@ export class PiecewiseLinear {
         let g1 = g.eval_at(x1);
         let g2 = g.eval_at(x2);
 
+        if (x2 == x1) {
+            console.log("divide by zero:", x1, x2);
+        }
+
         let m1 = (f2 - f1) / (x2 - x1);
         let m2 = (g2 - g1) / (x2 - x1);
 
@@ -131,7 +135,7 @@ export class PiecewiseLinear {
                 } 
                 i++;
             } else {
-                if (ordered_partition.at(-1) != f2x[i]) {
+                if (ordered_partition.at(-1) != f2x[j]) {
                     ordered_partition.push(f2x[j]);
                 }
                 j++;
@@ -146,7 +150,7 @@ export class PiecewiseLinear {
         }
         
         while (j < f2x.length) {
-            if (ordered_partition.at(-1) != f2x[i]) {
+            if (ordered_partition.at(-1) != f2x[j]) {
                 ordered_partition.push(f2x[j]);
             }
             j++;
@@ -155,7 +159,11 @@ export class PiecewiseLinear {
         let segment_sum = 0;
 
         for (let idx = 0; idx < ordered_partition.length - 1; idx++) {
-            segment_sum += PiecewiseLinear.integrate_product_segment(ordered_partition[idx], ordered_partition[idx + 1], f1, f2);
+            let seg_to_add = PiecewiseLinear.integrate_product_segment(ordered_partition[idx], ordered_partition[idx + 1], f1, f2);
+            if (isNaN(seg_to_add)) {
+                console.log("OrdPart: ", ordered_partition);
+            }
+            segment_sum += seg_to_add;
         }
 
         return segment_sum;

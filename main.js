@@ -449,7 +449,6 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
             }
 
             let progress = scrollCounter/SCROLLNUM;
-            console.log(progress);
 
             const NUM_SECTIONS = 5;
 
@@ -1502,6 +1501,210 @@ d3.text("smoothed_vector_magnitudes.txt").then(function(data) {
 
     // Apply theme colors to SVG elements
     updateSvgColors();
+
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Get the actual CSS size
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
+    
+    
+    // Now mouse coordinates match perfectly
+    
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let canDraw = true;
+
+    let xCoordinates = [];
+    let yCoordinates = [];
+
+    const buttonContainer = document.getElementById('button-container');
+
+    const clearButton = document.createElement('button');
+    clearButton.textContent = "Clear Canvas";
+    clearButton.style.padding = "5px 10px";
+    clearButton.style.fontSize = "14px";
+    clearButton.style.cursor = "pointer";
+    buttonContainer.appendChild(clearButton);
+
+    clearButton.addEventListener('click', () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        xCoordinates = [];
+        yCoordinates = [];
+        canDraw = true;
+        const errorBox = document.getElementById('error-box');
+        if (errorBox) {
+            buttonContainer.removeChild(errorBox);
+        }
+        // Clear the SVG overlay
+        d3.select("svg.canvas-overlay").remove();
+        const proceedButton = document.getElementById('proceed-button');
+        if (proceedButton) {
+            buttonContainer.removeChild(proceedButton);
+        }
+        const simButton = document.getElementById("similarity-button");
+        if (simButton) {
+            buttonContainer.removeChild(simButton);
+        }
+        const peakButton = document.getElementById("find-peaks-button");
+        if (peakButton) {
+            buttonContainer.removeChild(peakButton);
+        }        
+    });
+
+    function handleDrawInput(){
+        if (!d3.select("svg.canvas-overlay").empty()) {
+            return;
+        }
+        const overlaySvg = d3.select(canvas.parentElement)
+            .append("svg")
+            .attr("class", "canvas-overlay")
+            .attr("width", canvas.width)
+            .attr("height", canvas.height)
+            .style("position", "absolute")
+            .style("top", canvas.offsetTop + "px")
+            .style("left", canvas.offsetLeft + "px")
+            .style("pointer-events", "none");
+
+        if (!xCoordinates.every((val, i, arr) => i === 0 || val >= arr[i - 1])) {
+            // Display error message
+            const errorBox = document.createElement('div');
+            errorBox.textContent = "Error: Please draw strictly left to right";
+            errorBox.style.color = "red";
+            errorBox.style.fontSize = "16px";
+            errorBox.style.fontFamily = "Arial, sans-serif";
+            errorBox.id = "error-box";
+            buttonContainer.appendChild(errorBox);
+
+        } else {
+            // Remove duplicates from xCoordinates and corresponding yCoordinates
+            let uniqueCoordinates = [];
+            xCoordinates.forEach((x, index) => {
+                if (!uniqueCoordinates.includes(x)) {
+                    uniqueCoordinates.push(x);
+                } else {
+                    xCoordinates.splice(index, 1);
+                    yCoordinates.splice(index, 1);
+                }
+            });
+
+
+            let xCoordsShifted = xCoordinates.map(x => x - xCoordinates[0]);
+            let yCoordsShifted = yCoordinates.map(x => - x);
+            const SCALE_FAC = 80 / xCoordsShifted.length;
+            let custom_pattern = new PiecewiseLinear(xCoordsShifted, yCoordsShifted);
+            const customX = d3.scaleLinear()
+                .domain([0, canvas.width])
+                .range([canvas.width / 10, canvas.width * 9/10]);
+
+            const customY = d3.scaleLinear()
+                .domain([-canvas.height, 0])
+                .range([canvas.height * 9/ 10, canvas.height / 10]);
+
+
+
+            // Add a text box and button to the overlay
+            const textBox = overlaySvg.append("text")
+                .attr("x", canvas.width - 100)
+                .attr("y", canvas.height - 20)
+                .attr("text-anchor", "middle")
+                .style("font-size", "16px")
+                .style("fill", "black")
+                .attr("id", "proceed-text")
+                .text("Proceed with this pattern?");
+
+            const button = document.createElement("button");
+            button.textContent = "Proceed";
+            button.style.padding = "10px 20px";
+            button.style.fontSize = "16px";
+            button.style.cursor = "pointer";
+            button.style.position = "absolute";
+            button.style.top = `${canvas.offsetTop + canvas.height + 10}px`;
+            button.style.left = `${canvas.offsetLeft + canvas.width - 50}px`;
+            button.style.transform = "translateX(-50%)";
+            button.id = "proceed-button";
+            buttonContainer.appendChild(button);
+
+            button.addEventListener("click", () => {
+                // Clear the canvas and remove the overlay SVG
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                xCoordinates = [];
+                yCoordinates = [];
+                buttonContainer.removeChild(button);
+                // Remove the text box
+                overlaySvg.select("#proceed-text").remove();
+                overlaySvg.append("text")
+                    .attr("x", canvas.width / 2)
+                    .attr("y", canvas.height / 10)
+                    .attr("text-anchor", "middle")
+                    .style("font-size", "30px")
+                    .style("fill", "black")
+                    .text("Your pattern:");
+                custom_pattern.plot(overlaySvg, customX, customY, "var(--plot-line-color-2)");
+                addSimButton(overlaySvg, buttonContainer, canvas, custom_pattern, REAL_ACC_DATA);
+            });
+
+            
+        }
+        
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+        xCoordinates.push(lastX);
+        yCoordinates.push(lastY);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing || !canDraw) return;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+        xCoordinates.push(lastX);
+        yCoordinates.push(lastY);
+    });
+    
+    canvas.addEventListener('mousedown', (e) => {
+      isDrawing = true;
+      [lastX, lastY] = [e.offsetX, e.offsetY];
+    });
+    
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawing || !canDraw) return;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    });
+    
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mouseout', () => isDrawing = false);
+    
+    ctx.strokeStyle = '#000';
+
+    canvas.addEventListener('mouseup', () => {
+        isDrawing = false;
+        canDraw = false;
+        handleDrawInput();
+    });
+    canvas.addEventListener('mouseout', () => {
+        isDrawing = false;
+        canDraw = false;
+        handleDrawInput();
+    });
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    
+
 });
 
 // Add scroll-based animations
@@ -1545,3 +1748,222 @@ document.addEventListener('DOMContentLoaded', function() {
         observer.observe(section);
     });
 });
+
+function addSimButton(overlaySvg, buttonContainer, canvas, custom_pattern, REAL_ACC_DATA) {
+    const textBox = overlaySvg.append("text")
+        .attr("x", canvas.width - 250)
+        .attr("y", canvas.height - 20)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("fill", "black")
+        .attr("id", "similarity-text")
+        .text("Click here to see the similarity between your pattern and the data");
+    const button = document.createElement("button");
+    button.textContent = "See Similarity";
+    button.style.padding = "10px 20px";
+    button.style.fontSize = "16px";
+    button.style.cursor = "pointer";
+    button.style.position = "absolute";
+    button.style.top = `${canvas.offsetTop + canvas.height + 10}px`;
+    button.style.left = `${canvas.offsetLeft + canvas.width - 50}px`;
+    button.style.transform = "translateX(-50%)";
+    button.id = "similarity-button";
+    buttonContainer.appendChild(button);
+
+    button.addEventListener("click", () => {
+        patternToSim(overlaySvg, buttonContainer, canvas, custom_pattern, REAL_ACC_DATA);
+    });
+}
+
+function patternToSim(overlaySvg, buttonContainer, canvas, custom_pattern, REAL_ACC_DATA) {
+    overlaySvg.selectAll("path").remove();
+    const simButton = document.getElementById("similarity-button");
+    if (simButton) {
+        buttonContainer.removeChild(simButton);
+    }
+    overlaySvg.selectAll("text").remove();
+    let scaled_custom_pattern = custom_pattern.scale(160 / canvas.width);
+    let yCoordsToChange = scaled_custom_pattern.y;
+    const meanY = d3.mean(yCoordsToChange);
+    const minY = d3.min(yCoordsToChange);
+    const maxY = d3.max(yCoordsToChange);
+    const rangeY = maxY - minY;
+
+    yCoordsToChange = yCoordsToChange.map(y => ((y - meanY) / rangeY) * 4);
+    let scaled_again = new PiecewiseLinear(scaled_custom_pattern.x, yCoordsToChange);
+
+    let similarityScores = [];
+
+
+    for (let i = 0; i < REAL_ACC_DATA.x.length; i++) {
+        let shiftedPattern = scaled_again.shift(REAL_ACC_DATA.x[i]);
+        let similarity = PiecewiseLinear.inner_prod(REAL_ACC_DATA, shiftedPattern);
+        similarityScores.push(similarity);
+    }
+
+    
+    
+    // Log or process similarityScores as needed
+    const simX = d3.scaleLinear()
+        .domain([0, similarityScores.length - 1])
+        .range([0, canvas.width]);
+
+    const simY = d3.scaleLinear()
+        .domain([Math.min(-20, d3.min(similarityScores)) - 5, Math.max(20, d3.max(similarityScores)) + 5])
+        .range([canvas.height, 0]);
+
+    const simLine = d3.line()
+        .x((d, i) => simX(i))
+        .y(d => simY(d));
+
+    overlaySvg.append("line")
+        .attr("x1", 0)
+        .attr("x2", canvas.width)
+        .attr("y1", simY(-15))
+        .attr("y2", simY(-15))
+        .attr("stroke", "red")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "4,4")
+        .style("opacity", 0)
+        .transition()
+        .duration(1000)
+        .style("opacity", 1);
+
+    overlaySvg.append("text")
+        .attr("x", 10)
+        .attr("y", simY(-15) - 5)
+        .attr("text-anchor", "start")
+        .style("font-size", "12px")
+        .style("fill", "red")
+        .text("Lowest similarity between data and real pattern")
+        .style("opacity", 0)
+        .transition()
+        .duration(1000)
+        .style("opacity", 1);
+
+    overlaySvg.append("line")
+        .attr("x1", 0)
+        .attr("x2", canvas.width)
+        .attr("y1", simY(15))
+        .attr("y2", simY(15))
+        .attr("stroke", "red")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "4,4")
+        .style("opacity", 0)
+        .transition()
+        .duration(1000)
+        .style("opacity", 1);
+
+    overlaySvg.append("text")
+        .attr("x", 10)
+        .attr("y", simY(15) - 5)
+        .attr("text-anchor", "start")
+        .style("font-size", "12px")
+        .style("fill", "red")
+        .text("Highest similarity between data and real pattern")
+        .style("opacity", 0)
+        .transition()
+        .duration(1000)
+        .style("opacity", 1);
+
+    overlaySvg.append("path")
+        .datum(similarityScores)
+        .attr("fill", "none")
+        .attr("stroke", "orange")
+        .attr("stroke-width", 2)
+        .attr("d", simLine)
+        .style("opacity", 0)
+        .transition()
+        .duration(1000)
+        .style("opacity", 1);
+
+    const findPeaksButton = document.createElement("button");
+    findPeaksButton.textContent = "Find Peaks";
+    findPeaksButton.style.padding = "10px 20px";
+    findPeaksButton.style.fontSize = "16px";
+    findPeaksButton.style.cursor = "pointer";
+    findPeaksButton.style.position = "absolute";
+    findPeaksButton.style.top = `${canvas.offsetTop + canvas.height + 10}px`;
+    findPeaksButton.style.left = `${canvas.offsetLeft + canvas.width - 50}px`;
+    findPeaksButton.style.transform = "translateX(-50%)";
+    findPeaksButton.id = "find-peaks-button";
+    buttonContainer.appendChild(findPeaksButton);
+
+    const textBox = overlaySvg.append("text")
+        .attr("x", canvas.width - 150)
+        .attr("y", canvas.height - 20)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("fill", "black")
+        .attr("id", "find-peaks-text")
+        .text("Click here to find the number of steps");
+
+    findPeaksButton.addEventListener("click", () => {
+        findPeaks(scaled_again, similarityScores, overlaySvg, simX, simY, canvas);
+    });
+}
+
+function findPeaks(scaled_again, similarityScores, overlaySvg, simX, simY, canvas) {
+    const halfIntervalWidth = Math.round(Math.max(...scaled_again.x) / 2);
+    let peaks = [];
+    for (let i = 0; i < similarityScores.length; i++) {
+        let isPeak = true;
+        for (let j = Math.max(0, i - halfIntervalWidth); j <= Math.min(similarityScores.length - 1, i + halfIntervalWidth); j++) {
+            if (similarityScores[j] > similarityScores[i]) {
+                isPeak = false;
+                break;
+            }
+        }
+        if (isPeak) {
+            peaks.push(i);
+        }
+    }
+    
+
+    // Add lines to each peak circle to show the interval width
+    overlaySvg.selectAll(".peak-line")
+        .data(peaks)
+        .enter()
+        .append("line")
+        .attr("class", "peak-line")
+        .attr("x1", d => simX(d - halfIntervalWidth))
+        .attr("x2", d => simX(d + halfIntervalWidth))
+        .attr("y1", d => simY(similarityScores[d]))
+        .attr("y2", d => simY(similarityScores[d]))
+        .attr("stroke", "red")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "4,4")
+        .style("opacity", 0)
+        .transition()
+        .duration(1000)
+        .style("opacity", 1);
+
+    overlaySvg.selectAll(".peak-circle")
+        .data(peaks)
+        .enter()
+        .append("circle")
+        .attr("class", "peak-circle")
+        .attr("cx", d => simX(d))
+        .attr("cy", d => simY(similarityScores[d]))
+        .attr("r", 5)
+        .style("fill", "red")
+        .style("opacity", 0)
+        .transition()
+        .duration(1000)
+        .style("opacity", 1);
+
+    overlaySvg.append("text")
+        .attr("x", canvas.width / 2)
+        .attr("y", 30)
+        .attr("text-anchor", "middle")
+        .style("font-size", "24px")
+        .style("fill", "black")
+        .text(`Number of Steps Found: ${peaks.length}`);
+    overlaySvg.append("text")
+        .attr("x", canvas.width / 2)
+        .attr("y", 50)
+        .attr("text-anchor", "middle")
+        .style("font-size", "18px")
+        .style("fill", "black")
+        .text(`Interval width: ${halfIntervalWidth * 2 / 80} seconds`);
+}
